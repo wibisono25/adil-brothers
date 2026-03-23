@@ -332,6 +332,7 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
     <div id="sync-indicator" style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--text2);font-weight:600;margin-right:4px">
       <span style="width:8px;height:8px;background:var(--accent);border-radius:50%;animation:pulse 1s infinite"></span>Sinkron...
     </div>
+    <button class="btn-header" id="btn-sync-manual" title="Sinkron data dari Google Sheets">🔄 Sinkron</button>
     <button class="btn-header" id="btn-export">⬇ Export</button>
     <button class="btn-header" id="btn-import-trigger">⬆ Import</button>
     <input type="file" id="btn-import" accept=".json" style="display:none">
@@ -3133,11 +3134,11 @@ document.getElementById('btn-m-jual').addEventListener('click', ()=>{
   if(nominal<=0){ toast('Isi nominal dulu','err'); return; }
   db.keuangan.push({id:genId(),tgl,tipe:'in',kat:'Lokal Eceran',ket:ket||(liter>0?liter.toFixed(1)+' L':''),liter:liter||null,harga:harga||null,nominal});
   sv();
-  // Reset form
   document.getElementById('m-jual-liter').value='';
   document.getElementById('m-jual-nominal').value='';
   document.getElementById('m-jual-ket').value='';
   renderMJualRiwayat();
+  renderMobileDashboard();
   toast('Penjualan Rp '+fmtRp(nominal)+' tersimpan!','ok');
 });
 
@@ -3209,6 +3210,18 @@ function renderAll(){
 document.getElementById('btn-export').addEventListener('click', exportData);
 document.getElementById('btn-import-trigger').addEventListener('click',()=>document.getElementById('btn-import').click());
 document.getElementById('btn-import').addEventListener('change',e=>{ if(e.target.files[0]){ importData(e.target.files[0]); e.target.value=''; } });
+
+// Tombol sinkron manual — tarik data terbaru dari Sheets sekarang
+document.getElementById('btn-sync-manual').addEventListener('click', ()=>{
+  showSyncStatus('🔄 Mengambil data terbaru...', 'ok');
+  syncFromSheets();
+});
+
+// Auto-sinkron setiap 30 detik — agar data dari HP otomatis muncul di laptop
+// Tanpa perlu refresh halaman manual
+setInterval(()=>{
+  syncFromSheets();
+}, 30000);
 
 // ════════════════════════════════════
 // INIT
