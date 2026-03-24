@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Adil Brothers Fresh Milks — Sistem Manajemen Susu</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 :root{--bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;--border:rgba(0,0,0,0.06);--border2:rgba(0,0,0,0.12);--text:#1c1c1e;--text2:#8e8e93;--text3:#aeaeb2;--accent:#007aff;--accent-hover:#0064d2;--accent-light:rgba(0,122,255,0.08);--accent2:#ff9500;--accent2-light:rgba(255,149,0,0.08);--danger:#ff3b30;--danger-light:rgba(255,59,48,0.08);--warning:#ff9500;--warning-light:rgba(255,149,0,0.08);--success:#34c759;--success-light:rgba(52,199,89,0.08);--purple:#af52de;--purple-light:rgba(175,82,222,0.08);--radius:10px;--radius-lg:16px;--radius-xl:20px;--shadow:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.06);--shadow-md:0 4px 20px rgba(0,0,0,0.08),0 2px 8px rgba(0,0,0,0.04);--shadow-lg:0 12px 40px rgba(0,0,0,0.12)}
@@ -170,7 +173,7 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
 
   /* Semua halaman desktop disembunyikan */
   #page-wilayah,#page-peternak,#page-input,#page-riwayat,
-  #page-pinjaman,#page-pakan,#page-rekap,#page-slip,#page-keuangan,
+  #page-pinjaman,#page-pakan,#page-rekap,#page-slip,#page-tabungan,#page-keuangan,
   #page-dashboard{
     display:none !important;
   }
@@ -316,6 +319,8 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
 .pakan-bar{height:100%;border-radius:10px;transition:width 0.5s ease}
 .keu-laba-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 .keu-laba-row:last-child{border-bottom:none;font-weight:700;font-size:15px;padding-top:10px}
+
+
 </style>
 </head>
 <body>
@@ -351,6 +356,7 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
     <button class="nav-tab" data-page="keuangan">💼 Keuangan Usaha</button>
     <button class="nav-tab" data-page="rekap">📊 Rekap Bayar</button>
     <button class="nav-tab" data-page="slip">🖨 Slip Gaji</button>
+    <button class="nav-tab" data-page="tabungan">💰 Tabungan</button>
   </div>
 </div>
 
@@ -733,6 +739,23 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
       </div>
     </div>
 
+    <!-- DAFTAR KARYAWAN -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div class="card-title" style="margin:0"><span class="icon" style="background:rgba(175,82,222,0.1)">👥</span> Daftar Karyawan</div>
+        <button class="btn btn-sm btn-primary" id="btn-kar-tambah">+ Tambah Karyawan</button>
+      </div>
+      <div class="stat-row" id="kar-stats"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th>No</th><th>Nama</th><th>Jabatan</th>
+          <th class="num">Gaji (Rp)</th><th class="num">Tunjangan (Rp)</th>
+          <th class="num">Total (Rp)</th><th>Status</th><th>Aksi</th>
+        </tr></thead>
+        <tbody id="body-karyawan"></tbody>
+      </table></div>
+    </div>
+
     <!-- PANEL KANAN: RINGKASAN & RIWAYAT -->
     <div>
       <!-- FILTER & LAPORAN -->
@@ -836,6 +859,18 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
     <div id="rek-sum"></div>
   </div>
 
+  <!-- PEMILIH PERIODE PAKAN -->
+  <div class="card" id="card-pakan-period" style="display:none">
+    <div class="card-title"><span class="icon" style="background:rgba(255,149,0,0.1)">🚚</span> Periode Pakan untuk Potongan</div>
+    <div class="tip">Pilih rentang tanggal distribusi pakan yang akan dijadikan potongan rekap ini. <b>Default:</b> 1 minggu sebelum periode setoran susu.</div>
+    <div class="row" style="align-items:flex-end;gap:10px">
+      <div class="f200"><label>Pakan Dari</label><input type="date" id="rek-pakan-dari" style="width:100%"></div>
+      <div class="f200"><label>Pakan Sampai</label><input type="date" id="rek-pakan-sampai" style="width:100%"></div>
+      <button class="btn btn-primary" id="btn-auto-pakan">🔄 Auto-isi dari Data Distribusi</button>
+    </div>
+    <div id="pakan-period-preview" style="margin-top:10px;font-size:12px;color:var(--text2)"></div>
+  </div>
+
   <div class="card" id="rek-pot-card">
     <div class="card-title"><span class="icon icon-brown">✏️</span> Input Potongan Per Peternak</div>
     <div class="tip">Isi potongan untuk periode ini. <b>Beras</b> otomatis dari hutang beras aktif. <b>Hutang Bergulir</b> otomatis dari rekap sebelumnya (atau input manual pertama kali).</div>
@@ -849,8 +884,7 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
         <th class="num" style="min-width:110px">Mineral (Rp)</th>
         <th class="num" style="min-width:110px">Lain-lain (Rp)</th>
         <th style="min-width:120px">Ket. Lain-lain</th>
-        <th class="num" style="min-width:100px">Pakan (zak)</th>
-        <th class="num">Nilai Pakan</th>
+        <th class="num">Pakan (Rp) <span style="font-weight:400;font-size:10px;color:var(--accent)">(dari distribusi)</span></th>
       </tr></thead>
       <tbody id="body-pot"></tbody>
     </table></div>
@@ -897,9 +931,16 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
       <div class="f200"><label>Peternak</label><select id="slip-peternak" style="width:100%"><option value="">-- Pilih atau cetak semua --</option></select></div>
       <button class="btn btn-primary" id="btn-slip-preview">👁 Preview</button>
     </div>
-    <div style="display:flex;gap:8px;margin-top:4px">
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
       <button class="btn btn-success btn-sm" id="btn-slip-cetak">🖨 Cetak Slip Ini</button>
       <button class="btn btn-purple btn-sm" id="btn-slip-semua">🖨 Cetak Semua Peternak</button>
+      <button class="btn btn-sm" id="btn-slip-pdf" style="background:#e74c3c;color:#fff">📄 Export PDF</button>
+      <button class="btn btn-sm" id="btn-slip-zip" style="background:#2c3e50;color:#fff">📦 Export Semua (ZIP)</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;padding-top:8px;border-top:1px dashed var(--border)">
+      <button class="btn btn-sm" id="btn-tab-cetak" style="background:#1565c0;color:#fff">🖨 Cetak Tabungan Ini</button>
+      <button class="btn btn-sm" id="btn-tab-pdf" style="background:#1976d2;color:#fff">📄 Export Tabungan PDF</button>
+      <button class="btn btn-sm" id="btn-tab-zip" style="background:#0d47a1;color:#fff">📦 Export Semua Tabungan (ZIP)</button>
     </div>
   </div>
 
@@ -916,6 +957,55 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
         </p>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ═══ TABUNGAN ═══ -->
+<div id="page-tabungan" class="page">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin:0"><span class="icon" style="background:rgba(21,101,192,0.1)">📋</span> Filter Saldo Tabungan</div>
+      <div style="display:flex;gap:8px">
+        <select id="tabungan-tahun" style="width:100px;height:34px;font-size:13px"></select>
+        <select id="tabungan-bulan" style="width:140px;height:34px;font-size:13px">
+          <option value="">Full 1 Tahun</option>
+          <option value="01">Januari</option>
+          <option value="02">Februari</option>
+          <option value="03">Maret</option>
+          <option value="04">April</option>
+          <option value="05">Mei</option>
+          <option value="06">Juni</option>
+          <option value="07">Juli</option>
+          <option value="08">Agustus</option>
+          <option value="09">September</option>
+          <option value="10">Oktober</option>
+          <option value="11">November</option>
+          <option value="12">Desember</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-row" id="tabungan-stats"></div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin:0"><span class="icon icon-blue">💰</span> Daftar Saldo Peternak</div>
+      <button class="btn btn-sm" id="btn-tabungan-csv">⬇ CSV Laporan Ini</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>No</th><th>Kode</th><th>Nama</th><th>Wilayah</th>
+        <th class="num">Susu (L)</th><th class="num" style="color:var(--text2)">Tarif (Rp)</th><th class="num">Total Tabungan (Rp)</th>
+      </tr></thead>
+      <tbody id="body-tabungan"></tbody>
+      <tfoot><tr style="background:var(--surface2)">
+        <td colspan="4" style="text-align:right;font-weight:700">Total Keseluruhan</td>
+        <td class="num" id="tab-tot-liter" style="font-weight:700">—</td>
+        <td></td>
+        <td class="num" id="tab-tot-rp" style="font-weight:700;color:var(--accent)">—</td>
+      </tr></tfoot>
+    </table></div>
   </div>
 </div>
 
@@ -1142,6 +1232,38 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
   </div>
 </div>
 
+<!-- MODAL TAMBAH/EDIT KARYAWAN -->
+<div class="modal-ov" id="modal-karyawan">
+  <div class="modal">
+    <div class="modal-title" id="modal-kar-title">👥 Tambah Karyawan</div>
+    <input type="hidden" id="kar-edit-id">
+    <div class="row" style="margin-bottom:12px">
+      <div><label>Nama Karyawan</label><input id="kar-nama" placeholder="contoh: Sopir 1" style="width:100%"></div>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+      <div><label>Jabatan</label>
+        <select id="kar-jabatan" style="width:100%">
+          <option value="Sopir">Sopir</option>
+          <option value="Kesehatan Hewan">Kesehatan Hewan (Keswan)</option>
+          <option value="Inseminasi Buatan">Inseminasi Buatan (IB)</option>
+          <option value="Potong Kuku">Potong Kuku</option>
+          <option value="Admin">Admin</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+      <div><label>Gaji per Bulan (Rp)</label><input type="number" id="kar-gaji" placeholder="0" style="width:100%"></div>
+      <div><label>Tunjangan per Bulan (Rp)</label><input type="number" id="kar-tunjangan" placeholder="0" style="width:100%"></div>
+    </div>
+    <div><label>Status</label><select id="kar-status" style="width:200px"><option value="true">Aktif</option><option value="false">Non-aktif</option></select></div>
+    <div class="modal-footer">
+      <button class="btn" id="btn-kar-batal">Batal</button>
+      <button class="btn btn-primary" id="btn-kar-simpan">Simpan</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1239,9 +1361,18 @@ function ld(){
 
 // syncFromSheets() — Ambil data terbaru dari Google Sheets
 // Dipanggil saat pertama buka, menimpa localStorage dengan data dari cloud
+let gridEditing = false; // Flag: true jika ada input susu yang sedang aktif diedit
+
 function syncFromSheets(){
   const indicator = document.getElementById('sync-indicator');
   if(indicator) indicator.style.display = 'flex';
+
+  // Jangan timpa data jika pengguna sedang aktif menginput susu
+  if(gridEditing){
+    if(indicator) indicator.style.display='none';
+    showSyncStatus('✏️ Sedang input — sync ditunda', 'warn');
+    return;
+  }
 
   fetch(GOOGLE_SCRIPT_URL + '?action=load')
     .then(r => r.json())
@@ -1305,8 +1436,8 @@ function importData(file){
   r.readAsText(file);
 }
 // defaultKaryawan() — Data karyawan bawaan sesuai blueprint usaha Glagaharum
-// Dipanggil otomatis saat pertama kali buka aplikasi atau saat data karyawan kosong
-// Tunjangan sudah dihitung per bulan (4 minggu × tunjangan mingguan)
+// Hanya dipakai saat pertama kali buka (belum pernah setup)
+// Setelah user mengedit/menambah karyawan, flag karyawanSetup=true mencegah reset
 function defaultKaryawan(){
   return [
     {id:genId(),nama:'Sopir 1',jabatan:'Sopir',gaji:1200000,tunjangan:0,aktif:true},
@@ -1320,6 +1451,10 @@ function defaultKaryawan(){
     {id:genId(),nama:'Petugas Potong Kuku 2',jabatan:'Potong Kuku',gaji:1100000,tunjangan:320000,aktif:true},
   ];
 }
+// shouldUseDefault() — Cek apakah harus pakai data default
+// Return false jika user sudah pernah setup karyawan manual
+function shouldUseDefaultKaryawan(){ return !db.karyawanSetup; }
+function markKaryawanSetup(){ db.karyawanSetup=true; sv(); }
 
 // ════════════════════════════════════
 // UTILS
@@ -1591,7 +1726,11 @@ function buildGrid(){
       ['pagi','sore'].forEach((f,fi)=>{
         const inp=document.createElement('input'); inp.type='number'; inp.min='0'; inp.step='0.5'; inp.className='ginp'; inp.value=d[f]||''; inp.placeholder='0';
         inp.addEventListener('change',()=>onGC(p.kode,f,inp.value,w));
-        inp.addEventListener('focus',()=>inp.select());
+        inp.addEventListener('focus',()=>{ inp.select(); gridEditing=true; });
+        inp.addEventListener('blur',()=>{
+          // Set false hanya jika tidak ada input lain yang masih fokus
+          setTimeout(()=>{ if(!document.activeElement?.classList.contains('ginp')) gridEditing=false; }, 150);
+        });
         inp.addEventListener('keydown',e=>onGK(e,p.kode,f,w));
         tr.cells[3+fi].appendChild(inp);
         if(f==='pagi') tr._pagi=inp; else tr._sore=inp;
@@ -1851,7 +1990,7 @@ function hapusBeras(id){
 }
 
 function showPinDetail(id){
-  const pin=db.pinjaman.find(p=>p.id===id); if(!p) return;
+  const pin=db.pinjaman.find(p=>p.id===id); if(!pin) return;
   const peternak=db.peternak.find(x=>x.kode===pin.kode)||{nama:'?'};
   document.getElementById('modal-pin-detail-title').textContent=`Detail Pinjaman — ${peternak.nama}`;
   const body=document.getElementById('modal-pin-detail-body');
@@ -1904,6 +2043,7 @@ document.querySelectorAll('.sc-btn').forEach(btn=>{
     else if(s==='7-hari'){ sampai=today; dari=addDays(today,-6); }
     else if(s==='bulan-ini'){ dari=new Date(today.getFullYear(),today.getMonth(),1); sampai=new Date(today.getFullYear(),today.getMonth()+1,0); }
     rekRange={dari:dts(dari),sampai:dts(sampai)};
+    delete document.getElementById('rek-pakan-dari').dataset.userSet;
     renderRekap();
   });
 });
@@ -1912,10 +2052,97 @@ document.getElementById('btn-terapkan').addEventListener('click',()=>{
   const sampai=document.getElementById('rek-sampai').value;
   if(!dari||!sampai){ toast('Isi kedua tanggal','err'); return; }
   if(dari>sampai){ toast('Tanggal mulai harus sebelum selesai','err'); return; }
-  rekRange={dari,sampai}; renderRekap();
+  rekRange={dari,sampai};
+  delete document.getElementById('rek-pakan-dari').dataset.userSet;
+  renderRekap();
 });
 document.getElementById('rek-harga').addEventListener('change', renderRekap);
 document.getElementById('rek-hpakan').addEventListener('change', renderRekap);
+
+// ═══════════════════════════════════
+// PEMILIHAN PERIODE PAKAN UNTUK POTONGAN
+// ═══════════════════════════════════
+// updatePakanPeriodDefault() — Hitung default periode pakan = 1 minggu sebelum periode susu
+// Contoh: susu 16-22 Mar → pakan 9-15 Mar
+function updatePakanPeriodDefault(){
+  const {dari,sampai}=rekRange;
+  if(!dari||!sampai) return;
+  const elDari=document.getElementById('rek-pakan-dari');
+  const elSampai=document.getElementById('rek-pakan-sampai');
+  // Hanya set default jika belum diisi user di periode ini
+  if(!elDari.dataset.userSet){
+    const d=new Date(dari+'T00:00:00');
+    const pakanSampai=new Date(d.getTime()-86400000); // dari - 1 hari
+    const pakanDari=new Date(pakanSampai.getTime()-6*86400000); // 7 hari ke belakang
+    elDari.value=dts(pakanDari);
+    elSampai.value=dts(pakanSampai);
+  }
+  // Tampilkan card
+  document.getElementById('card-pakan-period').style.display='';
+  previewPakanPeriod();
+}
+
+// previewPakanPeriod() — Tampilkan ringkasan data pakan_dist dalam rentang yang dipilih
+function previewPakanPeriod(){
+  const pDari=document.getElementById('rek-pakan-dari').value;
+  const pSampai=document.getElementById('rek-pakan-sampai').value;
+  const el=document.getElementById('pakan-period-preview');
+  if(!pDari||!pSampai){ el.innerHTML='<span style="color:var(--text3)">Pilih rentang tanggal pakan</span>'; return; }
+  const dist=db.pakan_dist.filter(d=>d.tgl>=pDari&&d.tgl<=pSampai);
+  if(!dist.length){ el.innerHTML='<span style="color:var(--warning)">⚠️ Tidak ada data distribusi pakan di rentang '+fmtTgl(pDari)+' – '+fmtTgl(pSampai)+'</span>'; return; }
+  // Hitung per peternak
+  const map={};
+  dist.forEach(d=>{ if(!map[d.kode])map[d.kode]=0; map[d.kode]+=d.zak; });
+  const jmlPeternak=Object.keys(map).length;
+  const totalZak=dist.reduce((a,d)=>a+d.zak,0);
+  el.innerHTML='📦 Ditemukan <b>'+totalZak+' zak</b> distribusi ke <b>'+jmlPeternak+' peternak</b> di periode '+fmtTgl(pDari)+' – '+fmtTgl(pSampai)+'. Klik tombol <b>Auto-isi</b> untuk mengaplikasikan.';
+}
+
+// autoIsiPakan() — Ambil data pakan_dist dan isi ke pot_rekap sebagai potongan
+function autoIsiPakan(){
+  const {dari,sampai}=rekRange;
+  if(!dari||!sampai){ toast('Pilih periode susu dulu','err'); return; }
+  const pDari=document.getElementById('rek-pakan-dari').value;
+  const pSampai=document.getElementById('rek-pakan-sampai').value;
+  if(!pDari||!pSampai){ toast('Pilih rentang tanggal pakan','err'); return; }
+  const dist=db.pakan_dist.filter(d=>d.tgl>=pDari&&d.tgl<=pSampai);
+  if(!dist.length){ toast('Tidak ada data distribusi di rentang ini','warn'); return; }
+  // Hitung total zak DAN total Rupiah per peternak
+  const mapZak={}, mapRp={};
+  dist.forEach(d=>{
+    if(!mapZak[d.kode]) mapZak[d.kode]=0;
+    if(!mapRp[d.kode]) mapRp[d.kode]=0;
+    mapZak[d.kode]+=d.zak;
+    mapRp[d.kode]+=(d.zak*(d.hjual||0));  // hjual = harga jual per zak dari distribusi
+  });
+  const jmlPeternak=Object.keys(mapZak).length;
+  const totalZak=dist.reduce((a,d)=>a+d.zak,0);
+  const totalRp=dist.reduce((a,d)=>a+(d.zak*(d.hjual||0)),0);
+  if(!confirm('Data pakan dari '+fmtTgl(pDari)+' s/d '+fmtTgl(pSampai)+':\n'+totalZak+' zak (Total Rp '+fmtRp(totalRp)+') untuk '+jmlPeternak+' peternak.\n\nAplikasikan sebagai potongan pakan?')) return;
+  // Tulis ke pot_rekap
+  const key=getPotKey(dari,sampai);
+  if(!db.pot_rekap[key]) db.pot_rekap[key]={};
+  // Reset pakan semua peternak dulu (agar yang tidak dapat pakan = 0)
+  db.peternak.filter(p=>p.status==='aktif').forEach(p=>{
+    if(!db.pot_rekap[key][p.kode]) db.pot_rekap[key][p.kode]={pakan:0,pakanRp:0,mineral:0,lainlain:0,lainlainKet:''};
+    db.pot_rekap[key][p.kode].pakan=0;
+    db.pot_rekap[key][p.kode].pakanRp=0;
+  });
+  // Isi dari data distribusi
+  Object.keys(mapZak).forEach(kode=>{
+    if(!db.pot_rekap[key][kode]) db.pot_rekap[key][kode]={pakan:0,pakanRp:0,mineral:0,lainlain:0,lainlainKet:''};
+    db.pot_rekap[key][kode].pakan=mapZak[kode];
+    db.pot_rekap[key][kode].pakanRp=mapRp[kode]; // Simpan total Rupiah ASLI dari distribusi
+    db.pot_rekap[key][kode].pakanDari=pDari;      // Simpan periode pakan agar konsisten di slip
+    db.pot_rekap[key][kode].pakanSampai=pSampai;
+  });
+  sv(); renderRekap();
+  toast(totalZak+' zak pakan (Rp '+fmtRp(totalRp)+') di-apply untuk '+jmlPeternak+' peternak','ok');
+}
+
+document.getElementById('btn-auto-pakan').addEventListener('click', autoIsiPakan);
+document.getElementById('rek-pakan-dari').addEventListener('change', function(){ this.dataset.userSet='1'; previewPakanPeriod(); });
+document.getElementById('rek-pakan-sampai').addEventListener('change', function(){ this.dataset.userSet='1'; previewPakanPeriod(); });
 
 function getPotKey(dari,sampai){ return `${dari}__${sampai}`; }
 function getPot(dari,sampai,kode){ const key=getPotKey(dari,sampai); return db.pot_rekap[key]?.[kode]||{pakan:0,mineral:0,lainlain:0,lainlainKet:''}; }
@@ -1970,45 +2197,49 @@ function setHutangManual(kode, val){ db.hutang_bergulir[kode]=Math.max(0,val); s
 //   6. Tabungan          → liter × tarif tabungan peternak
 //   7. Hutang Bergulir   → sisa hutang dari minggu lalu (terakhir!)
 //
-// hutangGulung = berapa hutang yang terbawa ke minggu depan
-// Kalau bruto cukup bayar semua → hutangGulung = 0 (lunas)
-// Kalau tidak cukup → hutangGulung = selisihnya, dibawa ke minggu berikutnya
+// RUMUS PEMBAYARAN PETERNAK:
+// Bersih = Bruto - SP - Beras - Mineral - Lain-lain - Pakan - Tabungan - Hutang Bergulir
+// ↑ Semua potongan selalu diperhitungkan PENUH (tidak dibatasi sisa bruto)
+// Jika Bersih < 0 → menjadi HUTANG BERGULIR peternak di periode berikutnya
 function hitungRekap(p, data, dari, sampai, harga, hpakan){
   const entries=data.filter(s=>s.kode===p.kode);
   const liter=entries.reduce((a,s)=>a+(s.pagi||0)+(s.sore||0),0);
   const bruto=liter*harga;
   const pot=getPot(dari,sampai,p.kode);
   const pakanZak=parseFloat(pot.pakan)||0;
-  const potPakan=pakanZak*hpakan;
+  // Gunakan pakanRp dari distribusi jika tersedia, fallback ke zak*hpakan
+  const potPakan=(pot.pakanRp && pot.pakanRp>0) ? pot.pakanRp : pakanZak*hpakan;
   const potMineral=parseFloat(pot.mineral)||0;
   const potLain=parseFloat(pot.lainlain)||0;
   const loan=getActiveLoan(p.kode); const spC=loan?Math.min(loan.cicilan,loan.sisa):0;
   const berasE=getActiveBeras(p.kode); const berasC=berasE?Math.min(berasE.cicilan,berasE.sisa):0;
   const hutangLalu=getHutangBergulir(p.kode,dari,sampai);
-  const tab=liter*(p.tab||200);
+  const tabF=liter*(p.tab||200); // Tabungan SELALU penuh (tidak dibatasi sisa)
 
-  // Prioritas: SP → Beras → Mineral → Lain-lain → Pakan → Tabungan → Hutang Bergulir
-  let sisa=bruto;
-  const spF=Math.min(spC,sisa); sisa-=spF;
-  const berasF=Math.min(berasC,sisa); sisa-=berasF;
-  const mF=Math.min(potMineral,sisa); sisa-=mF;
-  const lF=Math.min(potLain,sisa); sisa-=lF;
-  const pF=Math.min(potPakan,sisa); sisa-=pF;
-  const tabF=Math.min(tab,sisa); sisa-=tabF;
-  // Hutang bergulir: kurangi dari sisa, kalau kurang → sisa hutang bergulir baru
-  const hutangBayar=Math.min(hutangLalu,Math.max(0,sisa));
-  sisa-=hutangBayar;
-  const sisaHutang=hutangLalu-hutangBayar; // hutang yang belum terbayar
+  // Potongan SP & Beras: dibatasi bruto agar tidak menambah hutang ganda
+  // (karena SP/Beras punya pencatatan hutang sendiri di modul pinjaman)
+  const spF=Math.min(spC, bruto);
+  const berasF=Math.min(berasC, Math.max(0, bruto-spF));
 
-  const bersih=sisa; // sisa setelah semua potongan
-  const totalPotongan=spF+berasF+mF+lF+pF+tabF+hutangBayar;
-  // Hutang baru periode ini = potongan yang tidak terbayar karena bruto kurang
-  const kekurangan=Math.max(0, (spF+berasF+mF+lF+pF+tabF+hutangLalu) - bruto - sisaHutang - hutangBayar);
-  // Hutang bergulir ke periode berikutnya = sisa hutang lama + kekurangan baru
-  const hutangBaru=sisaHutang + Math.max(0, -bersih < 0 ? 0 : -bersih);
-  const hutangGulung=hutangLalu - hutangBayar + Math.max(0,-bersih <= 0 ? Math.abs(bersih) : 0);
+  // Sisa potongan: Mineral, Lain-lain, Pakan, Tabungan → langsung dikurangi, bisa negatif
+  const bersih = bruto - spF - berasF - potMineral - potLain - potPakan - tabF - hutangLalu;
 
-  return { liter, bruto, spF, berasF, mF, lF, pF, pakanZak, tabF, hutangLalu, hutangBayar, hutangGulung:Math.max(0,hutangGulung), bersih:Math.max(0,bersih) };
+  // Hutang bergulir ke periode berikutnya
+  // Jika bersih negatif → seluruh nilai negatif menjadi hutang baru
+  // Jika bersih positif → tidak ada hutang gulung (hutang lama sudah terlunasi)
+  const hutangGulung = bersih < 0 ? Math.abs(bersih) : 0;
+  // hutangBayar: berapa hutang lama yang berhasil terbayar pada periode ini
+  const hutangBayar = bersih < 0
+    ? hutangLalu - Math.max(0, hutangLalu - Math.max(0, bruto-spF-berasF-potMineral-potLain-potPakan-tabF))
+    : hutangLalu;
+
+  return {
+    liter, bruto,
+    spF, berasF,
+    mF: potMineral, lF: potLain, pF: potPakan, pakanZak, tabF,
+    hutangLalu, hutangBayar, hutangGulung,
+    bersih  // bisa negatif → tampilkan merah di UI
+  };
 }
 
 
@@ -2032,6 +2263,8 @@ function renderRekap(){
   }
   lbl.textContent=fmtTgl(dari)+' – '+fmtTgl(sampai);
   document.getElementById('rek-info').textContent=dari+' s/d '+sampai+' · Harga: Rp '+fmtRp(harga)+'/L';
+  // Update periode pakan default (1 minggu sebelum)
+  updatePakanPeriodDefault();
 
   // Cek apakah periode ini sudah diproses
   const prosesKey=getHutangKey(dari,sampai);
@@ -2059,21 +2292,23 @@ function renderRekap(){
     if(r.hutangGulung>0) tr.style.background='rgba(255,59,48,0.04)';
     tr.style.cursor='pointer'; tr.title='Klik untuk detail setoran harian';
     tr.innerHTML=
-      '<td>'+(r.liter>0?n:'—')+'</td>'+
-      '<td><b>'+p.kode+'</b></td>'+
-      '<td>'+p.nama+'</td>'+
-      '<td>'+p.wilayah+'</td>'+
-      '<td class="num">'+(r.liter>0?r.liter.toFixed(1):'—')+'</td>'+
-      '<td class="num">'+(r.liter>0?fmtRp(r.bruto):'—')+'</td>'+
-      '<td class="num">'+(r.spF>0?'<span style="color:var(--danger)">'+fmtRp(r.spF)+'</span>':'—')+'</td>'+
-      '<td class="num">'+(r.berasF>0?'<span style="color:var(--accent2)">'+fmtRp(r.berasF)+'</span>':'—')+'</td>'+
-      '<td class="num">'+(r.mF>0?fmtRp(r.mF):'—')+'</td>'+
-      '<td class="num">'+(r.lF>0?fmtRp(r.lF):'—')+'</td>'+
-      '<td class="num">'+(r.pF>0?fmtRp(r.pF):'—')+'</td>'+
-      '<td class="num">'+(r.tabF>0?fmtRp(r.tabF):'—')+'</td>'+
-      '<td class="num">'+(r.hutangLalu>0?'<span style="color:var(--danger);font-weight:600">'+fmtRp(r.hutangLalu)+'</span>':'—')+'</td>'+
-      '<td class="num" style="font-weight:700;color:'+(r.hutangGulung>0?'var(--danger)':r.bersih===0?'var(--text2)':'var(--success)')+';">'+(r.liter>0?fmtRp(r.bersih):'—')+'</td>'+
-      '<td>'+(r.liter>0?badge:'<span class="badge badge-gray">No susu</span>')+'</td>';
+      '<td>'+(r.liter>0?n:'\u2014')+'</td>'+
+      '<td><b>' + p.kode + '</b></td>'+
+      '<td>' + p.nama + '</td>'+
+      '<td>' + p.wilayah + '</td>'+
+      '<td class="num">' + (r.liter>0?r.liter.toFixed(1):'—') + '</td>'+
+      '<td class="num">' + (r.liter>0?fmtRp(r.bruto):'—') + '</td>'+
+      '<td class="num">' + (r.spF>0?'<span style="color:var(--danger)">'+fmtRp(r.spF)+'</span>':'—') + '</td>'+
+      '<td class="num">' + (r.berasF>0?'<span style="color:var(--accent2)">'+fmtRp(r.berasF)+'</span>':'—') + '</td>'+
+      '<td class="num">' + (r.mF>0?fmtRp(r.mF):'—') + '</td>'+
+      '<td class="num">' + (r.lF>0?fmtRp(r.lF):'—') + '</td>'+
+      '<td class="num">' + (r.pF>0?fmtRp(r.pF):'—') + '</td>'+
+      '<td class="num">' + (r.tabF>0?fmtRp(r.tabF):'—') + '</td>'+
+      '<td class="num">' + (r.hutangLalu>0?'<span style="color:var(--danger);font-weight:600">'+fmtRp(r.hutangLalu)+'</span>':'—') + '</td>'+
+      '<td class="num" style="font-weight:700;color:' + (r.bersih<0?'var(--danger)':r.bersih===0?'var(--text2)':'var(--success)') + ';">' +
+        (r.liter>0 ? (r.bersih<0 ? '<span title="Akan menjadi hutang bergulir">- Rp '+fmtRp(Math.abs(r.bersih))+'</span>' : 'Rp '+fmtRp(r.bersih)) : '—') +
+      '</td>'+
+      '<td>' + (r.liter>0?badge:'<span class="badge badge-gray">No susu</span>') + '</td>';
     tr.addEventListener('click',()=>showDetail(p.kode,dari,sampai,p.nama));
     tb.appendChild(tr);
 
@@ -2082,8 +2317,7 @@ function renderRekap(){
     trP.innerHTML=
       '<td><b>'+p.kode+'</b></td><td>'+p.nama+'</td>'+
       '<td class="num" style="color:var(--accent2);font-size:12px">'+(berasEntry?'Rp '+fmtRp(r.berasF)+' (auto)':'—')+'</td>'+
-      '<td class="num"></td><td class="num"></td><td></td><td class="num"></td>'+
-      '<td class="num">Rp '+fmtRp((parseFloat(pot.pakan)||0)*hpakan)+'</td>';
+      '<td class="num"></td><td class="num"></td><td></td><td class="num"></td>';
     const inpMin=document.createElement('input'); inpMin.type='number'; inpMin.min='0'; inpMin.value=pot.mineral||''; inpMin.placeholder='0'; inpMin.style.cssText='width:100px;text-align:right;height:28px;font-size:12px';
     inpMin.addEventListener('change',()=>setPot(dari,sampai,p.kode,'mineral',parseFloat(inpMin.value)||0));
     trP.cells[3].appendChild(inpMin);
@@ -2093,9 +2327,12 @@ function renderRekap(){
     const inpKet=document.createElement('input'); inpKet.type='text'; inpKet.value=pot.lainlainKet||''; inpKet.placeholder='keterangan...'; inpKet.style.cssText='font-size:12px;height:28px';
     inpKet.addEventListener('change',()=>setPot(dari,sampai,p.kode,'lainlainKet',inpKet.value));
     trP.cells[5].appendChild(inpKet);
-    const inpZak=document.createElement('input'); inpZak.type='number'; inpZak.min='0'; inpZak.step='0.5'; inpZak.value=parseFloat(pot.pakan)||''; inpZak.placeholder='0'; inpZak.style.cssText='width:80px;text-align:right;height:28px;font-size:12px';
-    inpZak.addEventListener('change',()=>setPot(dari,sampai,p.kode,'pakan',parseFloat(inpZak.value)||0));
-    trP.cells[6].appendChild(inpZak);
+    // Kolom Pakan — read-only, diisi dari Auto-Isi Pakan (data distribusi)
+    const pakanRpVal = (pot.pakanRp && pot.pakanRp>0) ? pot.pakanRp : (parseFloat(pot.pakan)||0)*hpakan;
+    const tdPakan = trP.cells[6];
+    tdPakan.style.cssText='text-align:right;font-size:12px;color:var(--accent);padding:4px 8px';
+    tdPakan.textContent = pakanRpVal > 0 ? 'Rp '+fmtRp(pakanRpVal) : '—';
+    tdPakan.title = pakanRpVal > 0 ? `${parseFloat(pot.pakan)||0} zak` : 'Belum ada data distribusi pakan';
     tbPot.appendChild(trP);
 
     // HUTANG BERGULIR ROW
@@ -2218,14 +2455,13 @@ document.getElementById('btn-rek-print').addEventListener('click',()=>{
 });
 
 // ════════════════════════════════════
-// SLIP GAJI
+// SLIP PEMBAYARAN PETERNAK (REDESIGN)
 // ════════════════════════════════════
 function refreshSlipSelects(){
   const sel=document.getElementById('slip-peternak'); const cv=sel.value;
   sel.innerHTML='<option value="">-- Semua peternak --</option>';
   db.peternak.filter(p=>p.status==='aktif').forEach(p=>{ const o=document.createElement('option'); o.value=p.kode; o.textContent=p.kode+' — '+p.nama; sel.appendChild(o); });
   sel.value=cv;
-  // sync periode dari rekap jika ada
   if(rekRange.dari){ document.getElementById('slip-dari').value=rekRange.dari; document.getElementById('slip-sampai').value=rekRange.sampai; }
 }
 
@@ -2235,32 +2471,94 @@ document.getElementById('btn-slip-preview').addEventListener('click',()=>{
   const kode=document.getElementById('slip-peternak').value;
   if(!dari||!sampai){ toast('Isi periode dulu','err'); return; }
   slipState={dari,sampai,kode};
-  if(kode){ renderSlipPreview(kode,dari,sampai); }
-  else{ document.getElementById('slip-preview-area').innerHTML='<div class="empty"><div class="empty-icon">🖨</div>Pilih satu peternak untuk preview, atau klik "Cetak Semua" untuk langsung cetak.</div>'; }
+  if(kode){
+    // Preview 1 peternak
+    renderSlipPreview(kode,dari,sampai);
+  } else {
+    // Preview SEMUA peternak
+    const data=db.susu.filter(s=>s.tgl>=dari&&s.tgl<=sampai);
+    const pList=db.peternak.filter(p=>p.status==='aktif'&&data.some(s=>s.kode===p.kode));
+    if(!pList.length){ toast('Tidak ada peternak dengan setoran di periode ini','warn'); return; }
+    const area=document.getElementById('slip-preview-area');
+    let allSlips = '';
+    pList.forEach((p, idx) => {
+      const d = buildSlipData(p.kode, dari, sampai);
+      if(!d) return;
+      const pageBreak = idx < pList.length - 1 ? 'page-break-after:always;' : '';
+      allSlips += `<div style="max-width:560px;margin:0 auto 20px;background:#fff;padding:16px;border-radius:10px;box-shadow:var(--shadow-md);${pageBreak}">${buildSlipHTML(d, dari, sampai)}</div>`;
+    });
+    area.innerHTML = allSlips;
+    toast(`Preview ${pList.length} slip peternak ditampilkan`,'ok');
+  }
 });
 
 document.getElementById('btn-slip-cetak').addEventListener('click',()=>{
   if(!slipState.dari){ toast('Klik Preview dulu','warn'); return; }
-  if(!slipState.kode){ toast('Pilih peternak untuk cetak satu slip','warn'); return; }
-  cetakSlip(slipState.kode, slipState.dari, slipState.sampai);
+  if(slipState.kode){
+    cetakSlip(slipState.kode, slipState.dari, slipState.sampai);
+  } else {
+    cetakSemuaSlip(slipState.dari, slipState.sampai);
+  }
 });
 
 document.getElementById('btn-slip-semua').addEventListener('click',()=>{
   const dari=document.getElementById('slip-dari').value;
   const sampai=document.getElementById('slip-sampai').value;
   if(!dari||!sampai){ toast('Isi periode dulu','err'); return; }
-  const harga=parseFloat(document.getElementById('rek-harga').value)||7300;
+  
+  // Render preview dulu
   const data=db.susu.filter(s=>s.tgl>=dari&&s.tgl<=sampai);
   const pList=db.peternak.filter(p=>p.status==='aktif'&&data.some(s=>s.kode===p.kode));
   if(!pList.length){ toast('Tidak ada peternak dengan setoran di periode ini','warn'); return; }
-  if(!confirm(`Cetak ${pList.length} slip? Dialog print akan muncul satu per satu.`)) return;
-  let i=0;
-  function next(){
-    if(i>=pList.length) return;
-    cetakSlip(pList[i].kode,dari,sampai);
-    i++; setTimeout(next,1500);
-  }
-  next();
+  
+  const area=document.getElementById('slip-preview-area');
+  let allSlips = '';
+  pList.forEach((p, idx) => {
+    const d = buildSlipData(p.kode, dari, sampai);
+    if(!d) return;
+    const pageBreak = idx < pList.length - 1 ? 'page-break-after:always;' : '';
+    allSlips += `<div style="max-width:560px;margin:0 auto 20px;background:#fff;padding:16px;border-radius:10px;box-shadow:var(--shadow-md);${pageBreak}">${buildSlipHTML(d, dari, sampai)}</div>`;
+  });
+  area.innerHTML = allSlips;
+  area.scrollIntoView({behavior:'smooth'});
+  slipState = {dari, sampai, kode:''}; // pastikan state terupdate
+  
+  // Langsung cetak
+  cetakSemuaSlip(dari, sampai);
+  toast(`${pList.length} slip ditampilkan & jendela cetak dibuka`,'ok');
+});
+
+// Export PDF individual
+document.getElementById('btn-slip-pdf').addEventListener('click',()=>{
+  if(!slipState.dari){ toast('Klik Preview dulu','warn'); return; }
+  if(!slipState.kode){ toast('Pilih peternak untuk export PDF','warn'); return; }
+  exportSlipPDF(slipState.kode, slipState.dari, slipState.sampai);
+});
+
+// Export semua dalam ZIP
+document.getElementById('btn-slip-zip').addEventListener('click',()=>{
+  const dari=document.getElementById('slip-dari').value;
+  const sampai=document.getElementById('slip-sampai').value;
+  if(!dari||!sampai){ toast('Isi periode dulu','err'); return; }
+  exportSemuaSlipZIP(dari, sampai);
+});
+
+// ── AKSI CETAK TABUNGAN ──
+document.getElementById('btn-tab-cetak').addEventListener('click',()=>{
+  if(!slipState.dari){ toast('Klik Preview dulu','warn'); return; }
+  if(!slipState.kode){ toast('Pilih peternak untuk cetak tabungan','warn'); return; }
+  cetakSlipTabungan(slipState.kode, slipState.dari, slipState.sampai);
+});
+document.getElementById('btn-tab-pdf').addEventListener('click',()=>{
+  if(!slipState.dari){ toast('Klik Preview dulu','warn'); return; }
+  if(!slipState.kode){ toast('Pilih peternak untuk export PDF tabungan','warn'); return; }
+  exportSlipTabunganPDF(slipState.kode, slipState.dari, slipState.sampai);
+});
+document.getElementById('btn-tab-zip').addEventListener('click',()=>{
+  const dari=document.getElementById('slip-dari').value;
+  const sampai=document.getElementById('slip-sampai').value;
+  if(!dari||!sampai){ toast('Isi periode dulu','err'); return; }
+  exportSemuaSlipTabunganZIP(dari, sampai);
 });
 
 function buildSlipData(kode,dari,sampai){
@@ -2268,78 +2566,405 @@ function buildSlipData(kode,dari,sampai){
   const hpakan=parseFloat(document.getElementById('rek-hpakan').value)||225000;
   const p=db.peternak.find(x=>x.kode===kode); if(!p) return null;
   const entries=db.susu.filter(s=>s.kode===kode&&s.tgl>=dari&&s.tgl<=sampai).sort((a,b)=>a.tgl.localeCompare(b.tgl));
-  const liter=entries.reduce((a,s)=>a+(s.pagi||0)+(s.sore||0),0);
-  const bruto=liter*harga;
+  const totalPagi=entries.reduce((a,s)=>a+(s.pagi||0),0);
+  const totalSore=entries.reduce((a,s)=>a+(s.sore||0),0);
+  const r=hitungRekap(p,db.susu.filter(s=>s.tgl>=dari&&s.tgl<=sampai),dari,sampai,harga,hpakan);
+  if(!r) return null;
   const pot=getPot(dari,sampai,kode);
-  const pakanZak=parseFloat(pot.pakan)||0;
-  const potPakan=pakanZak*hpakan;
-  const potMineral=parseFloat(pot.mineral)||0;
-  const potLain=parseFloat(pot.lainlain)||0;
   const lainKet=pot.lainlainKet||'';
-  const loan=getActiveLoan(kode); const spC=loan?Math.min(loan.cicilan,loan.sisa):0;
-  const berasEntry=getActiveBeras(kode); const berasC=berasEntry?Math.min(berasEntry.cicilan,berasEntry.sisa):0;
-  let sisa=bruto,spF=Math.min(spC,sisa);sisa-=spF;let bF=Math.min(berasC,sisa);sisa-=bF;let mF=Math.min(potMineral,sisa);sisa-=mF;let lF=Math.min(potLain,sisa);sisa-=lF;let pF=Math.min(potPakan,sisa);sisa-=pF;let tF=Math.min(liter*(p.tab||200),sisa);
-  const bersih=bruto-spF-bF-mF-lF-pF-tF;
-  return { p, entries, liter, bruto, spF, bF, mF, lF, lainKet, pF, pakanZak, tF, bersih, harga };
+  // Ambil periode pakan dari pot_rekap jika tersimpan, fallback ke form input
+  const pakanDari=pot.pakanDari || (document.getElementById('rek-pakan-dari')?document.getElementById('rek-pakan-dari').value:'');
+  const pakanSampai=pot.pakanSampai || (document.getElementById('rek-pakan-sampai')?document.getElementById('rek-pakan-sampai').value:'');
+  return { p, entries, totalPagi, totalSore, liter:r.liter, bruto:r.bruto, spF:r.spF, bF:r.berasF, mF:r.mF, lF:r.lF, lainKet, pF:r.pF, pakanZak:r.pakanZak, tF:r.tabF, bersih:r.bersih, harga, hutangLalu:r.hutangLalu, hutangBayar:r.hutangBayar, hutangGulung:r.hutangGulung, pakanDari, pakanSampai };
 }
+
 
 function renderSlipPreview(kode,dari,sampai){
   const d=buildSlipData(kode,dari,sampai); if(!d) return;
   const area=document.getElementById('slip-preview-area');
-  area.innerHTML='<div class="slip-wrap" id="slip-print-area">'+buildSlipHTML(d,dari,sampai)+'</div>';
+  area.innerHTML='<div style="max-width:560px;margin:0 auto;background:#fff;padding:16px;border-radius:10px;box-shadow:var(--shadow-md)" id="slip-print-area">'+buildSlipHTML(d,dari,sampai)+'</div>';
+}
+
+function getSlipLogoSrc(){
+  // Ambil logo dari header
+  const logoEl=document.querySelector('.header-logo img');
+  return logoEl ? logoEl.src : '';
 }
 
 function buildSlipHTML(d,dari,sampai){
-  const {p,entries,liter,bruto,spF,bF,mF,lF,lainKet,pF,pakanZak,tF,bersih,harga}=d;
-  let rows=entries.map(e=>`<div class="slip-row"><span>${fmtTglShort(e.tgl)}</span><span style="color:var(--text2);font-size:11px">P:${(e.pagi||0).toFixed(1)} S:${(e.sore||0).toFixed(1)}</span><span><b>${((e.pagi||0)+(e.sore||0)).toFixed(1)} L</b></span></div>`).join('');
-  if(!rows) rows='<div style="color:var(--text3);font-size:12px;padding:6px 0">Tidak ada setoran minggu ini</div>';
-  const potRows=[
-    spF>0?`<div class="slip-row"><span>Simpan Pinjam (SP)</span><span style="color:var(--danger)">- Rp ${fmtRp(spF)}</span></div>`:'',
-    bF>0?`<div class="slip-row"><span>Beras</span><span style="color:var(--accent2)">- Rp ${fmtRp(bF)}</span></div>`:'',
-    mF>0?`<div class="slip-row"><span>Mineral Sapi</span><span style="color:var(--danger)">- Rp ${fmtRp(mF)}</span></div>`:'',
-    lF>0?`<div class="slip-row"><span>${lainKet||'Lain-lain'}</span><span style="color:var(--danger)">- Rp ${fmtRp(lF)}</span></div>`:'',
-    pF>0?`<div class="slip-row"><span>Pakan (${pakanZak} zak)</span><span style="color:var(--danger)">- Rp ${fmtRp(pF)}</span></div>`:'',
-    tF>0?`<div class="slip-row"><span>Tabungan</span><span style="color:var(--danger)">- Rp ${fmtRp(tF)}</span></div>`:'',
-  ].filter(Boolean).join('') || '<div style="color:var(--text3);font-size:12px;padding:4px 0">Tidak ada potongan</div>';
+  const {p,entries,totalPagi,totalSore,liter,bruto,spF,bF,mF,lF,lainKet,pF,pakanZak,tF,bersih,harga,hutangLalu,hutangBayar,hutangGulung,pakanDari,pakanSampai}=d;
+  const logoSrc=getSlipLogoSrc();
+  // Tabel setoran harian
+  let tableRows=entries.map(e=>{
+    const pagi=(e.pagi||0).toFixed(1);
+    const sore=(e.sore||0).toFixed(1);
+    const tot=((e.pagi||0)+(e.sore||0)).toFixed(1);
+    return `<tr><td style="padding:3px 6px;border-bottom:1px solid #eee">${fmtTglShort(e.tgl)}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right">${pagi}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right">${sore}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right;font-weight:bold">${tot}</td></tr>`;
+  }).join('');
+  if(!tableRows) tableRows='<tr><td colspan="4" style="padding:8px;color:#999;text-align:center;font-style:italic">Tidak ada setoran minggu ini</td></tr>';
+  // Rincian potongan
+  const totalPot=spF+bF+mF+lF+pF+tF+hutangBayar;
+  const potItems=[];
+  if(hutangLalu>0) potItems.push({nama:`Hutang/Minus (Sisa Rp ${fmtRp(hutangLalu)}) - Dibayar`,jumlah:hutangBayar});
+  if(spF>0) potItems.push({nama:'Simpan Pinjam (SP)',jumlah:spF});
+  if(bF>0) potItems.push({nama:'Beras',jumlah:bF});
+  if(mF>0) potItems.push({nama:'Mineral Sapi',jumlah:mF});
+  let namaPakan = `Pakan (${pakanZak} zak)`;
+  if(pakanDari&&pakanSampai) namaPakan += ` [${fmtTglShort(pakanDari)} - ${fmtTglShort(pakanSampai)}]`;
+  if(pF>0) potItems.push({nama:namaPakan,jumlah:pF});
+  if(lF>0) potItems.push({nama:lainKet||'Lain-lain',jumlah:lF});
+  if(tF>0) potItems.push({nama:'Tabungan',jumlah:tF});
+  let potTableRows=potItems.map(item=>`<tr><td style="padding:3px 6px;border-bottom:1px solid #eee">${item.nama}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right;color:#dc3545">- Rp ${fmtRp(item.jumlah)}</td></tr>`).join('');
+  if(!potTableRows) potTableRows='<tr><td colspan="2" style="padding:6px;color:#999;text-align:center;font-style:italic">Tidak ada potongan</td></tr>';
+  // Pakan period info
+  let pakanInfo='';
+  if(pakanDari&&pakanSampai){
+    pakanInfo=`<div style="margin-top:4px;padding:6px 10px;background:#fff8e1;border-radius:6px;font-size:11px;color:#795548;border:1px solid #ffe0b2">🚚 Potongan pakan dari periode: <b>${fmtTglShort(pakanDari)}</b> s/d <b>${fmtTglShort(pakanSampai)}</b></div>`;
+  }
+  // Tabungan info
+  const tabPerLiter=p.tab||200;
+  const tabInfo=tF>0?`<div style="margin-top:4px;padding:6px 10px;background:#e3f2fd;border-radius:6px;font-size:11px;color:#1565c0;border:1px solid #bbdefb">💰 Tabungan: ${liter.toFixed(1)} L × Rp ${fmtRp(tabPerLiter)} = <b>Rp ${fmtRp(tF)}</b></div>`:'';
+  // Total color
+  const totalColor=bersih<0?'color:#dc3545':'color:#1c1c1e';
+  const totalBg=bersih<0?'background:#fff5f5;border:2px solid #dc3545':'background:#f0fdf4;border:2px solid #34c759';
   return `
-    <div class="slip-title">BUKTI PEMBAYARAN SUSU</div>
-    <div class="slip-org">Koperasi Glagaharum · Kandangtepus</div>
-    <div class="slip-divider"></div>
-    <div class="slip-row"><span>Nama</span><span><b>${p.nama}</b></span></div>
-    <div class="slip-row"><span>Kode</span><span>${p.kode}</span></div>
-    <div class="slip-row"><span>Periode</span><span>${fmtTglShort(dari)} – ${fmtTglShort(sampai)}</span></div>
-    <div class="slip-section-label">Setoran Susu</div>
-    ${rows}
-    <div class="slip-row" style="margin-top:4px"><span>Total Susu</span><span><b>${liter.toFixed(1)} L</b></span></div>
-    <div class="slip-row"><span>Harga /L</span><span>Rp ${fmtRp(harga)}</span></div>
-    <div class="slip-row"><span><b>Bruto</b></span><span><b>Rp ${fmtRp(bruto)}</b></span></div>
-    <div class="slip-section-label">Potongan</div>
-    ${potRows}
-    <div class="slip-row total ${bersih<0?'minus':''}"><span>PEMBAYARAN BERSIH</span><span>Rp ${fmtRp(bersih)}</span></div>
-    <div class="slip-sign">
-      <div><div class="slip-sign-line">Penerima</div></div>
-      <div><div class="slip-sign-line">Pengurus</div></div>
+    <div style="text-align:center;margin-bottom:10px">
+      ${logoSrc?`<img src="${logoSrc}" style="width:56px;height:56px;border-radius:8px;object-fit:contain;margin-bottom:4px" alt="Logo">`:''}
+      <div style="font-size:16px;font-weight:bold;letter-spacing:0.5px">UD ADIL BROTHERS</div>
+      <div style="font-size:11px;color:#666;margin-top:2px">BUKTI PEMBAYARAN SUSU</div>
+    </div>
+    <hr style="border:none;border-top:2px solid #222;margin:8px 0">
+    <div style="display:flex;justify-content:space-between;padding:4px 0">
+      <div><span style="color:#888;font-size:11px">Nama</span><br><b style="font-size:14px">${p.nama}</b></div>
+      <div style="text-align:right"><span style="color:#888;font-size:11px">Kode Peternak</span><br><b style="font-size:14px">${p.kode}</b></div>
+    </div>
+    <div style="padding:3px 0;font-size:12px;color:#555">Periode: <b>${fmtTglShort(dari)}</b> s/d <b>${fmtTglShort(sampai)}</b></div>
+    <hr style="border:none;border-top:1px solid #ddd;margin:6px 0">
+    <div style="font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">📋 Setoran Susu Harian</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#f5f5f5"><th style="padding:4px 6px;text-align:left;font-size:10px;color:#888">Tanggal</th><th style="padding:4px 6px;text-align:right;font-size:10px;color:#888">Pagi (L)</th><th style="padding:4px 6px;text-align:right;font-size:10px;color:#888">Sore (L)</th><th style="padding:4px 6px;text-align:right;font-size:10px;color:#888">Total (L)</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <div style="margin-top:6px;padding:8px;background:#f8f9fa;border-radius:6px;font-size:12px">
+      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Total Pagi</span><span><b>${totalPagi.toFixed(1)} L</b></span></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Total Sore</span><span><b>${totalSore.toFixed(1)} L</b></span></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0;border-top:1px solid #ddd;margin-top:4px;padding-top:5px"><span><b>Grand Total Susu</b></span><span><b>${liter.toFixed(1)} L</b></span></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Harga /Liter</span><span>Rp ${fmtRp(harga)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0;font-size:13px;color:#007aff"><span><b>Pendapatan Kotor (Bruto)</b></span><span><b>Rp ${fmtRp(bruto)}</b></span></div>
+    </div>
+    <hr style="border:none;border-top:1px solid #ddd;margin:8px 0">
+    <div style="font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">✂️ Rincian Potongan</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#fef2f2"><th style="padding:4px 6px;text-align:left;font-size:10px;color:#888">Jenis Potongan</th><th style="padding:4px 6px;text-align:right;font-size:10px;color:#888">Jumlah</th></tr></thead>
+      <tbody>${potTableRows}</tbody>
+      <tfoot><tr style="background:#fee2e2"><td style="padding:5px 6px;font-weight:bold;font-size:12px">Total Potongan</td><td style="padding:5px 6px;text-align:right;font-weight:bold;color:#dc3545;font-size:12px">- Rp ${fmtRp(totalPot)}</td></tr></tfoot>
+    </table>
+    ${pakanInfo}
+    ${tabInfo}
+    <div style="margin-top:12px;padding:12px;border-radius:8px;text-align:center;${totalBg}">
+      <div style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:4px">TOTAL PEMBAYARAN BERSIH</div>
+      <div style="font-size:22px;font-weight:bold;${totalColor}">Rp ${fmtRp(bersih)}</div>
+      ${hutangGulung>0?`<div style="font-size:10px;color:#dc3545;margin-top:2px">⚠️ Menunggak Hutang Rp ${fmtRp(hutangGulung)} (Gulung)</div>`:''}
     </div>`;
+}
+
+function getSlipCSS(){
+  return `
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;font-size:12px;width:148mm;min-height:200mm;margin:0 auto;padding:16px 20px;line-height:1.6;color:#1c1c1e;box-sizing:border-box}
+    img{display:block;margin:0 auto}
+    table{width:100%;border-collapse:collapse}
+    hr{border:none;margin:6px 0}
+    @media print{body{margin:0;padding:10mm 12mm;width:148mm;min-height:auto} @page{size:148mm 210mm;margin:0}}
+  `;
 }
 
 function cetakSlip(kode,dari,sampai){
   const d=buildSlipData(kode,dari,sampai); if(!d) return;
   const w=window.open('','_blank');
-  w.document.write(`<html><head><title>Slip - ${d.p.nama}</title><style>
-    body{font-family:Arial,sans-serif;font-size:12px;max-width:320px;margin:16px auto;line-height:1.6}
-    .slip-title{text-align:center;font-size:15px;font-weight:bold;margin-bottom:2px}
-    .slip-org{text-align:center;font-size:10px;color:#666;margin-bottom:12px}
-    .slip-divider{border:none;border-top:1px solid #ddd;margin:8px 0}
-    .slip-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f0f0f0}
-    .slip-section-label{font-size:10px;font-weight:bold;color:#888;text-transform:uppercase;margin:8px 0 3px;letter-spacing:0.04em}
-    .slip-row.total{font-weight:bold;border-top:2px solid #333;border-bottom:none;padding-top:6px;margin-top:4px;font-size:13px}
-    .slip-row.minus{color:#ff3b30}
-    .slip-sign{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;font-size:10px;text-align:center}
-    .slip-sign-line{border-top:1px solid #999;margin-top:28px;padding-top:3px}
-    @media print{body{margin:0}}
-  </style></head><body>${buildSlipHTML(d,dari,sampai)}</body></html>`);
+  w.document.write(`<html><head><title>Slip - ${d.p.nama}</title><style>${getSlipCSS()}</style></head><body>${buildSlipHTML(d,dari,sampai)}</body></html>`);
   w.document.close(); w.print();
 }
+
+function cetakSemuaSlip(dari, sampai){
+  const data=db.susu.filter(s=>s.tgl>=dari&&s.tgl<=sampai);
+  const pList=db.peternak.filter(p=>p.status==='aktif'&&data.some(s=>s.kode===p.kode));
+  if(!pList.length){ toast('Tidak ada peternak dengan setoran di periode ini','warn'); return; }
+  
+  const w=window.open('','_blank');
+  let content = '';
+  pList.forEach((p, idx) => {
+    const d = buildSlipData(p.kode, dari, sampai);
+    if(!d) return;
+    const pageBreak = idx < pList.length - 1 ? 'page-break-after:always;' : '';
+    content += `<div style="${pageBreak}">${buildSlipHTML(d, dari, sampai)}</div>`;
+  });
+  
+  w.document.write(`<html><head><title>Cetak Semua Slip</title><style>${getSlipCSS()}</style></head><body>${content}</body></html>`);
+  w.document.close(); w.print();
+}
+
+async function exportSlipPDF(kode,dari,sampai){
+  const d=buildSlipData(kode,dari,sampai); if(!d){ toast('Data tidak ditemukan','err'); return; }
+  toast('Generating PDF...','info');
+  const container=document.createElement('div');
+  container.style.cssText='width:148mm;padding:16px 20px;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.6;color:#1c1c1e;box-sizing:border-box';
+  container.innerHTML=buildSlipHTML(d,dari,sampai);
+  document.body.appendChild(container);
+  try{
+    const opt={margin:0,filename:`${d.p.kode}_${d.p.nama.replace(/\s+/g,'_')}.pdf`,image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:[148,210],orientation:'portrait'}};
+    await html2pdf().set(opt).from(container).save();
+    toast('PDF berhasil di-download!','ok');
+  }catch(err){ toast('Gagal generate PDF: '+err.message,'err'); }
+  finally{ document.body.removeChild(container); }
+}
+
+async function exportSemuaSlipZIP(dari,sampai){
+  const data=db.susu.filter(s=>s.tgl>=dari&&s.tgl<=sampai);
+  const pList=db.peternak.filter(p=>p.status==='aktif'&&data.some(s=>s.kode===p.kode));
+  if(!pList.length){ toast('Tidak ada peternak dengan setoran di periode ini','warn'); return; }
+  if(!confirm(`Export ${pList.length} slip sebagai ZIP? Proses ini mungkin memakan waktu.`)) return;
+  toast(`Generating ${pList.length} PDF...`,'info');
+  const zip=new JSZip();
+  for(let i=0;i<pList.length;i++){
+    const kode=pList[i].kode;
+    const d=buildSlipData(kode,dari,sampai);
+    if(!d) continue;
+    const container=document.createElement('div');
+    container.style.cssText='width:148mm;padding:16px 20px;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.6;color:#1c1c1e;box-sizing:border-box;position:absolute;left:-9999px;top:0';
+    container.innerHTML=buildSlipHTML(d,dari,sampai);
+    document.body.appendChild(container);
+    try{
+      const opt={margin:0,image:{type:'jpeg',quality:0.90},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:[148,210],orientation:'portrait'}};
+      const pdfBlob=await html2pdf().set(opt).from(container).outputPdf('blob');
+      const fileName=`${d.p.kode}_${d.p.nama.replace(/\s+/g,'_')}.pdf`;
+      zip.file(fileName,pdfBlob);
+    }catch(err){ console.error('PDF error for',kode,err); }
+    finally{ document.body.removeChild(container); }
+  }
+  try{
+    const content=await zip.generateAsync({type:'blob'});
+    saveAs(content,`SlipPembayaran_${fmtTglShort(dari)}_${fmtTglShort(sampai)}.zip`);
+    toast('ZIP berhasil di-download!','ok');
+  }catch(err){ toast('Gagal generate ZIP: '+err.message,'err'); }
+}
+
+function buildSlipTabunganHTML(d,dari,sampai){
+  const {p,liter,tF}=d;
+  const logoSrc=getSlipLogoSrc();
+  const tabPerLiter=p.tab||200;
+  return `
+    <div style="text-align:center;margin-bottom:20px">
+      ${logoSrc?`<img src="${logoSrc}" style="width:64px;height:64px;border-radius:8px;object-fit:contain;margin-bottom:8px" alt="Logo">`:''}
+      <div style="font-size:18px;font-weight:800;letter-spacing:0.5px">UD ADIL BROTHERS</div>
+      <div style="font-size:12px;color:#666;margin-top:2px">BUKTI TABUNGAN PETERNAK</div>
+    </div>
+    <div style="margin-bottom:20px;padding:12px;border:1px dashed #ccc;border-radius:8px;background:#fafafa">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:#666;font-size:12px">Nama Peternak:</span>
+        <b style="font-size:14px">${p.nama}</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:#666;font-size:12px">Kode Peternak:</span>
+        <b style="font-size:14px">${p.kode}</b>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:#666;font-size:12px">Periode Setoran:</span>
+        <span style="font-size:13px;font-weight:600">${fmtTglShort(dari)} s/d ${fmtTglShort(sampai)}</span>
+      </div>
+    </div>
+    <div style="margin-bottom:20px;padding:16px;background:#e3f2fd;border-left:4px solid #1976d2;border-radius:4px">
+      <div style="font-size:11px;font-weight:bold;color:#1565c0;text-transform:uppercase;margin-bottom:8px">Rincian Tabungan Periode Ini</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+        <span>Total Setoran Susu</span>
+        <span><b>${liter.toFixed(1)} L</b></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+        <span>Tarif Tabungan</span>
+        <span><b>Rp ${fmtRp(tabPerLiter)} / Liter</b></span>
+      </div>
+      <hr style="border-top:1px solid #90caf9;margin:10px 0">
+      <div style="display:flex;justify-content:space-between;font-size:15px;color:#0d47a1">
+        <span><b>Total Tabungan Masuk</b></span>
+        <span><b>Rp ${fmtRp(tF)}</b></span>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:10px;color:#999;margin-top:30px">
+      Tabungan ini disimpan oleh Koperasi/UD Adil Brothers dan dapat diambil sesuai kesepakatan.<br>
+      Dicetak pada: ${fmtTgl(dts(new Date()))}
+    </div>
+  `;
+}
+
+function cetakSlipTabungan(kode,dari,sampai){
+  const d=buildSlipData(kode,dari,sampai); if(!d) return;
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Tabungan - ${d.p.nama}</title><style>${getSlipCSS()}</style></head><body>${buildSlipTabunganHTML(d,dari,sampai)}</body></html>`);
+  w.document.close(); w.print();
+}
+
+async function exportSlipTabunganPDF(kode,dari,sampai){
+  const d=buildSlipData(kode,dari,sampai); if(!d){ toast('Data tidak ditemukan','err'); return; }
+  toast('Generating PDF Tabungan...','info');
+  const container=document.createElement('div');
+  container.style.cssText='width:148mm;padding:16px 20px;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.6;color:#1c1c1e;box-sizing:border-box';
+  container.innerHTML=buildSlipTabunganHTML(d,dari,sampai);
+  document.body.appendChild(container);
+  try{
+    const opt={margin:0,filename:`Tabungan_${d.p.kode}_${d.p.nama.replace(/\s+/g,'_')}.pdf`,image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:[148,210],orientation:'portrait'}};
+    await html2pdf().set(opt).from(container).save();
+    toast('PDF Tabungan berhasil di-download!','ok');
+  }catch(err){ toast('Gagal generate PDF: '+err.message,'err'); }
+  finally{ document.body.removeChild(container); }
+}
+
+async function exportSemuaSlipTabunganZIP(dari,sampai){
+  const data=db.susu.filter(s=>s.tgl>=dari&&s.tgl<=sampai);
+  const pList=db.peternak.filter(p=>p.status==='aktif'&&data.some(s=>s.kode===p.kode));
+  if(!pList.length){ toast('Tidak ada peternak dengan setoran di periode ini','warn'); return; }
+  if(!confirm(`Export ${pList.length} slip tabungan sebagai ZIP? Proses ini memakan waktu.`)) return;
+  toast(`Generating ${pList.length} PDF Tabungan...`,'info');
+  const zip=new JSZip();
+  for(let i=0;i<pList.length;i++){
+    const kode=pList[i].kode;
+    const d=buildSlipData(kode,dari,sampai);
+    if(!d || d.tF <= 0) continue; // Hanya export yang ada tabungannya
+    const container=document.createElement('div');
+    container.style.cssText='width:148mm;padding:16px 20px;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.6;color:#1c1c1e;box-sizing:border-box;position:absolute;left:-9999px;top:0';
+    container.innerHTML=buildSlipTabunganHTML(d,dari,sampai);
+    document.body.appendChild(container);
+    try{
+      const opt={margin:0,image:{type:'jpeg',quality:0.90},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:[148,210],orientation:'portrait'}};
+      const pdfBlob=await html2pdf().set(opt).from(container).outputPdf('blob');
+      const fileName=`Tabungan_${d.p.kode}_${d.p.nama.replace(/\s+/g,'_')}.pdf`;
+      zip.file(fileName,pdfBlob);
+    }catch(err){ console.error('PDF error for',kode,err); }
+    finally{ document.body.removeChild(container); }
+  }
+  try{
+    const content=await zip.generateAsync({type:'blob'});
+    saveAs(content,`SlipTabungan_${fmtTglShort(dari)}_${fmtTglShort(sampai)}.zip`);
+    toast('ZIP Tabungan berhasil di-download!','ok');
+  }catch(err){ toast('Gagal generate ZIP: '+err.message,'err'); }
+}
+
+// ════════════════════════════════════
+// HALAMAN TABUNGAN
+// ════════════════════════════════════
+
+function initTabunganFilters(){
+  const selTahun = document.getElementById('tabungan-tahun');
+  const years = new Set(db.susu.map(s => s.tgl.slice(0,4)));
+  const currentYear = new Date().getFullYear().toString();
+  years.add(currentYear);
+  selTahun.innerHTML = '';
+  [...years].sort().reverse().forEach(y => {
+    const o=document.createElement('option'); o.value=y; o.textContent=y; selTahun.appendChild(o);
+  });
+  selTahun.value = currentYear;
+  
+  const currentMonth = String(new Date().getMonth()+1).padStart(2,'0');
+  document.getElementById('tabungan-bulan').value = currentMonth;
+}
+
+document.getElementById('tabungan-tahun').addEventListener('change', renderTabungan);
+document.getElementById('tabungan-bulan').addEventListener('change', renderTabungan);
+
+function renderTabungan(){
+  const selTahun = document.getElementById('tabungan-tahun');
+  if(!selTahun.options.length) initTabunganFilters();
+  
+  const tahun = selTahun.value;
+  const bulan = document.getElementById('tabungan-bulan').value;
+  const prefix = bulan ? `${tahun}-${bulan}` : tahun;
+  
+  const dataSusu = db.susu.filter(s => s.tgl.startsWith(prefix));
+  const aktif = db.peternak.filter(p => p.status === 'aktif');
+  
+  const tb = document.getElementById('body-tabungan');
+  tb.innerHTML = '';
+  
+  let gTotL = 0;
+  let gTotRp = 0;
+  let n = 0;
+  
+  const rekapPeternak = [];
+  
+  aktif.forEach(p => {
+    const susuP = dataSusu.filter(s => s.kode === p.kode);
+    const liter = susuP.reduce((acc, s) => acc + (s.pagi||0) + (s.sore||0), 0);
+    if(liter > 0){
+      n++;
+      const tarif = p.tab || 200;
+      const totalRp = liter * tarif;
+      gTotL += liter;
+      gTotRp += totalRp;
+      rekapPeternak.push({ kode:p.kode, nama:p.nama, wilayah:p.wilayah, liter, tarif, totalRp });
+    }
+  });
+
+  if(!rekapPeternak.length){
+    tb.innerHTML='<tr><td colspan="7"><div class="empty"><div class="empty-icon">💰</div>Tidak ada data tabungan untuk periode ini</div></td></tr>';
+    document.getElementById('tab-tot-liter').textContent = '—';
+    document.getElementById('tab-tot-rp').textContent = '—';
+    document.getElementById('tabungan-stats').innerHTML = '';
+    return;
+  }
+  
+  // Urut berdasarkan wilayah lalu kode
+  rekapPeternak.sort((a,b) => (a.wilayah||'').localeCompare(b.wilayah||'') || a.kode.localeCompare(b.kode));
+  
+  rekapPeternak.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td><b>${r.kode}</b></td><td>${r.nama}</td><td>${r.wilayah||'—'}</td><td class="num"><b>${r.liter.toFixed(1)}</b></td><td class="num" style="color:var(--text2)">Rp ${fmtRp(r.tarif)}</td><td class="num" style="font-weight:700;color:var(--accent)">Rp ${fmtRp(r.totalRp)}</td>`;
+    tb.appendChild(tr);
+  });
+  
+  document.getElementById('tab-tot-liter').textContent = gTotL.toFixed(1) + ' L';
+  document.getElementById('tab-tot-rp').textContent = 'Rp ' + fmtRp(gTotRp);
+  
+  // Stats
+  document.getElementById('tabungan-stats').innerHTML = `
+    <div class="stat"><div class="stat-label">Total Peternak</div><div class="stat-val">${n}</div><div class="stat-sub">dari ${aktif.length} aktif</div></div>
+    <div class="stat s-blue"><div class="stat-label">Total Volume Susu</div><div class="stat-val">${gTotL.toFixed(1)} L</div><div class="stat-sub">di periode ini</div></div>
+    <div class="stat s-green"><div class="stat-label">Akumulasi Tabungan</div><div class="stat-val" style="color:var(--accent)">Rp ${fmtRp(gTotRp)}</div><div class="stat-sub">Tahun ${tahun} ${bulan?'Bulan '+bulan:''}</div></div>
+  `;
+}
+
+document.getElementById('btn-tabungan-csv').addEventListener('click',()=>{
+  const tahun = document.getElementById('tabungan-tahun').value;
+  const bulan = document.getElementById('tabungan-bulan').value;
+  const prefix = bulan ? `${tahun}-${bulan}` : tahun;
+  const dataSusu = db.susu.filter(s => s.tgl.startsWith(prefix));
+  
+  let csv = 'No,Kode,Nama,Wilayah,Total Susu (L),Tarif (Rp),Total Tabungan (Rp)\n';
+  let i=1, gTotL=0, gTotRp=0;
+  
+  const aktif = db.peternak.filter(p => p.status === 'aktif');
+  const arr = [];
+  aktif.forEach(p => {
+    const susuP = dataSusu.filter(s => s.kode === p.kode);
+    const liter = susuP.reduce((a, s) => a + (s.pagi||0) + (s.sore||0), 0);
+    if(liter>0) arr.push({p, liter});
+  });
+  
+  if(!arr.length){ toast('Tidak ada data','warn'); return; }
+  
+  arr.sort((a,b) => (a.p.wilayah||'').localeCompare(b.p.wilayah||'') || a.p.kode.localeCompare(b.p.kode));
+  
+  arr.forEach(item => {
+    const tarif = item.p.tab || 200;
+    const totRp = item.liter * tarif;
+    csv += `${i++},"${item.p.kode}","${item.p.nama}","${item.p.wilayah||''}",${item.liter},${tarif},${totRp}\n`;
+    gTotL+=item.liter; gTotRp+=totRp;
+  });
+  csv += `\nTOTAL,,,,, ${gTotL},,${gTotRp}\n`;
+  
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `LaporanTabungan_${prefix}.csv`;
+  a.click();
+  toast('CSV diekspor','ok');
+});
 
 // ════════════════════════════════════
 // OPERASIONAL PAKAN
@@ -2659,12 +3284,126 @@ document.getElementById('btn-keu-out').addEventListener('click',()=>{
 function updateGajiPreview(){const bln=document.getElementById('keu-gaji-bln').value;const aktif=(db.karyawan||[]).filter(k=>k.aktif);const tG=aktif.reduce((a,k)=>a+k.gaji,0);const tT=aktif.reduce((a,k)=>a+k.tunjangan,0);const sudah=bln?db.keuangan.some(k=>k.tipe==='out'&&k.kat==='Gaji Karyawan'&&k.tgl.startsWith(bln)):false;const el=document.getElementById('keu-gaji-preview');if(!el)return;el.innerHTML=aktif.length+' karyawan · Gaji: <b>Rp '+fmtRp(tG)+'</b> · Tunjangan: <b>Rp '+fmtRp(tT)+'</b>'+(sudah?'<br><span style="color:var(--warning)">⚠️ Sudah dicatat bulan ini</span>':'');}
 document.getElementById('keu-gaji-bln').addEventListener('change',updateGajiPreview);
 document.getElementById('btn-keu-gaji').addEventListener('click',()=>{const bln=document.getElementById('keu-gaji-bln').value;if(!bln){toast('Pilih bulan','err');return;}if(!db.karyawan||!db.karyawan.length){toast('Tidak ada data karyawan','err');return;}const aktif=db.karyawan.filter(k=>k.aktif);const sudah=db.keuangan.some(k=>k.tipe==='out'&&k.kat==='Gaji Karyawan'&&k.tgl.startsWith(bln));if(sudah&&!confirm('Gaji bulan ini sudah dicatat. Catat lagi?'))return;const tgl=bln+'-01';const tG=aktif.reduce((a,k)=>a+k.gaji,0);const tT=aktif.reduce((a,k)=>a+k.tunjangan,0);if(tG>0)db.keuangan.push({id:genId(),tgl,tipe:'out',kat:'Gaji Karyawan',ket:'Gaji '+aktif.length+' karyawan',nominal:tG});if(tT>0)db.keuangan.push({id:genId(),tgl,tipe:'out',kat:'Tunjangan Operasional',ket:'Tunjangan '+aktif.length+' karyawan',nominal:tT});sv();refreshKeuSelects();renderKeuangan();updateGajiPreview();toast('Gaji + tunjangan Rp '+fmtRp(tG+tT)+' dicatat','ok');});
+
+// ═══════════════════════════════════
+// MANAJEMEN KARYAWAN (CRUD)
+// ═══════════════════════════════════
+document.getElementById('btn-kar-tambah').addEventListener('click',()=>openModalKaryawan());
+document.getElementById('btn-kar-batal').addEventListener('click',()=>document.getElementById('modal-karyawan').classList.remove('open'));
+document.getElementById('btn-kar-simpan').addEventListener('click',simpanKaryawan);
+
+// openModalKaryawan() — Buka modal tambah/edit karyawan
+// Jika id diberikan → mode edit, isi form dari data yang ada
+// Jika tanpa id → mode tambah, form kosong
+function openModalKaryawan(id){
+  const modal=document.getElementById('modal-karyawan');
+  const titleEl=document.getElementById('modal-kar-title');
+  document.getElementById('kar-edit-id').value=id||'';
+  if(id){
+    const k=db.karyawan.find(x=>x.id===id);
+    if(!k) return;
+    titleEl.textContent='\u270F\uFE0F Edit Karyawan';
+    document.getElementById('kar-nama').value=k.nama;
+    document.getElementById('kar-jabatan').value=k.jabatan;
+    document.getElementById('kar-gaji').value=k.gaji;
+    document.getElementById('kar-tunjangan').value=k.tunjangan;
+    document.getElementById('kar-status').value=k.aktif?'true':'false';
+  } else {
+    titleEl.textContent='\uD83D\uDC65 Tambah Karyawan';
+    document.getElementById('kar-nama').value='';
+    document.getElementById('kar-jabatan').value='Sopir';
+    document.getElementById('kar-gaji').value='';
+    document.getElementById('kar-tunjangan').value='0';
+    document.getElementById('kar-status').value='true';
+  }
+  modal.classList.add('open');
+  setTimeout(()=>document.getElementById('kar-nama').focus(),100);
+}
+
+// simpanKaryawan() — Simpan data karyawan baru atau update yang sudah ada
+function simpanKaryawan(){
+  const id=document.getElementById('kar-edit-id').value;
+  const nama=document.getElementById('kar-nama').value.trim();
+  const jabatan=document.getElementById('kar-jabatan').value;
+  const gaji=parseFloat(document.getElementById('kar-gaji').value)||0;
+  const tunjangan=parseFloat(document.getElementById('kar-tunjangan').value)||0;
+  const aktif=document.getElementById('kar-status').value==='true';
+  if(!nama){ toast('Nama karyawan wajib diisi','err'); return; }
+  if(gaji<=0){ toast('Gaji harus lebih dari 0','err'); return; }
+  if(id){
+    // Mode edit
+    const idx=db.karyawan.findIndex(k=>k.id===id);
+    if(idx>=0) db.karyawan[idx]={id,nama,jabatan,gaji,tunjangan,aktif};
+  } else {
+    // Mode tambah
+    db.karyawan.push({id:genId(),nama,jabatan,gaji,tunjangan,aktif});
+  }
+  markKaryawanSetup();
+  sv(); renderKaryawan(); updateGajiPreview();
+  document.getElementById('modal-karyawan').classList.remove('open');
+  toast(id?'Data karyawan diperbarui':'Karyawan '+nama+' ditambahkan','ok');
+}
+
+// hapusKaryawan() — Soft-delete: ubah status jadi non-aktif
+// Tidak dihapus permanen agar data historis gaji tidak rusak
+function hapusKaryawan(id){
+  const k=db.karyawan.find(x=>x.id===id);
+  if(!k) return;
+  if(!confirm('Non-aktifkan karyawan '+k.nama+'?\nData tidak dihapus, hanya dinonaktifkan.')) return;
+  k.aktif=false;
+  markKaryawanSetup();
+  sv(); renderKaryawan(); updateGajiPreview();
+  toast(k.nama+' dinonaktifkan');
+}
+
+// renderKaryawan() — Gambar ulang tabel daftar karyawan + statistik
+function renderKaryawan(){
+  const list=db.karyawan||[];
+  const aktif=list.filter(k=>k.aktif);
+  const tG=aktif.reduce((a,k)=>a+k.gaji,0);
+  const tT=aktif.reduce((a,k)=>a+k.tunjangan,0);
+  // Stats
+  const statsEl=document.getElementById('kar-stats');
+  if(statsEl) statsEl.innerHTML=
+    '<div class="stat s-purple"><div class="stat-label">Karyawan Aktif</div><div class="stat-val">'+aktif.length+'</div><div class="stat-sub">dari '+list.length+' total</div></div>'+
+    '<div class="stat"><div class="stat-label">Total Gaji /bln</div><div class="stat-val" style="font-size:17px">Rp '+fmtRp(tG)+'</div></div>'+
+    '<div class="stat"><div class="stat-label">Total Tunjangan /bln</div><div class="stat-val" style="font-size:17px">Rp '+fmtRp(tT)+'</div></div>'+
+    '<div class="stat s-orange"><div class="stat-label">Grand Total /bln</div><div class="stat-val" style="font-size:17px">Rp '+fmtRp(tG+tT)+'</div></div>';
+  // Table
+  const tb=document.getElementById('body-karyawan');
+  if(!tb) return;
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-icon">\uD83D\uDC65</div>Belum ada karyawan</div></td></tr>';
+    return;
+  }
+  tb.innerHTML='';
+  list.forEach((k,i)=>{
+    const statusBadge=k.aktif?'<span class="badge badge-blue">Aktif</span>':'<span class="badge badge-gray">Non-aktif</span>';
+    const tr=document.createElement('tr');
+    if(!k.aktif) tr.style.opacity='0.5';
+    tr.innerHTML='<td>'+(i+1)+'</td><td><b>'+k.nama+'</b></td><td>'+k.jabatan+'</td>'+
+      '<td class="num">Rp '+fmtRp(k.gaji)+'</td>'+
+      '<td class="num">Rp '+fmtRp(k.tunjangan)+'</td>'+
+      '<td class="num"><b>Rp '+fmtRp(k.gaji+k.tunjangan)+'</b></td>'+
+      '<td>'+statusBadge+'</td><td></td>';
+    const bE=document.createElement('button'); bE.className='btn btn-xs'; bE.textContent='\u270F\uFE0F Edit';
+    bE.addEventListener('click',()=>openModalKaryawan(k.id));
+    const bH=document.createElement('button'); bH.className='btn btn-xs btn-danger'; bH.textContent=k.aktif?'Nonaktifkan':'Aktifkan'; bH.style.marginLeft='4px';
+    bH.addEventListener('click',()=>{
+      if(k.aktif){ hapusKaryawan(k.id); }
+      else { k.aktif=true; markKaryawanSetup(); sv(); renderKaryawan(); updateGajiPreview(); toast(k.nama+' diaktifkan kembali','ok'); }
+    });
+    tr.cells[7].appendChild(bE); tr.cells[7].appendChild(bH);
+    tb.appendChild(tr);
+  });
+}
+
 document.getElementById('keu-filter-bln').addEventListener('change',renderKeuLaporan);
 document.getElementById('keu-filter-periode').addEventListener('change',renderKeuLaporan);
 document.getElementById('keu-rw-tipe').addEventListener('change',renderKeuRiwayat);
 document.getElementById('keu-rw-kat').addEventListener('change',renderKeuRiwayat);
 document.getElementById('keu-rw-bln').addEventListener('change',renderKeuRiwayat);
-function renderKeuangan(){refreshKeuSelects();const now=new Date();const bln=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');const ef=document.getElementById('keu-filter-bln');const eg=document.getElementById('keu-gaji-bln');if(!ef.value)ef.value=bln;if(!eg.value)eg.value=bln;updateGajiPreview();renderKeuStats();renderKeuLaporan();renderKeuRiwayat();}
+function renderKeuangan(){refreshKeuSelects();const now=new Date();const bln=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');const ef=document.getElementById('keu-filter-bln');const eg=document.getElementById('keu-gaji-bln');if(!ef.value)ef.value=bln;if(!eg.value)eg.value=bln;updateGajiPreview();renderKaryawan();renderKeuStats();renderKeuLaporan();renderKeuRiwayat();}
 function renderKeuStats(){const now=new Date();const bln=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');const data=db.keuangan.filter(k=>k.tgl.startsWith(bln));const tI=data.filter(k=>k.tipe==='in').reduce((a,k)=>a+k.nominal,0);const tO=data.filter(k=>k.tipe==='out').reduce((a,k)=>a+k.nominal,0);const laba=tI-tO;const aI=db.keuangan.filter(k=>k.tipe==='in').reduce((a,k)=>a+k.nominal,0);const aO=db.keuangan.filter(k=>k.tipe==='out').reduce((a,k)=>a+k.nominal,0);document.getElementById('keu-stats').innerHTML='<div class="stat s-green"><div class="stat-label">Pemasukan Bulan Ini</div><div class="stat-val" style="font-size:17px">Rp '+fmtRp(tI)+'</div></div><div class="stat s-red"><div class="stat-label">Pengeluaran Bulan Ini</div><div class="stat-val" style="font-size:17px">Rp '+fmtRp(tO)+'</div></div><div class="stat"><div class="stat-label">Laba/Rugi Bulan Ini</div><div class="stat-val" style="font-size:17px;color:'+(laba>=0?'var(--success)':'var(--danger)')+'">Rp '+fmtRp(Math.abs(laba))+'</div><div class="stat-sub">'+(laba>=0?'✅ Laba':'⚠️ Rugi')+'</div></div><div class="stat"><div class="stat-label">Saldo Kumulatif</div><div class="stat-val" style="font-size:17px;color:'+(aI-aO>=0?'var(--success)':'var(--danger)')+'">Rp '+fmtRp(Math.abs(aI-aO))+'</div><div class="stat-sub">'+(aI-aO>=0?'Surplus':'Defisit')+'</div></div>';}
 function renderKeuLaporan(){const bln=document.getElementById('keu-filter-bln').value;const el=document.getElementById('keu-laporan');const el2=document.getElementById('keu-breakdown');if(!bln){el.innerHTML='<div class="empty" style="padding:20px">Pilih bulan</div>';return;}const data=db.keuangan.filter(k=>k.tgl.startsWith(bln));const tI=data.filter(k=>k.tipe==='in').reduce((a,k)=>a+k.nominal,0);const tO=data.filter(k=>k.tipe==='out').reduce((a,k)=>a+k.nominal,0);const laba=tI-tO;el.innerHTML='<div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;padding:10px 12px;background:rgba(52,199,89,0.08);border-radius:var(--radius);border-left:3px solid var(--success)"><span style="font-weight:600;color:var(--success)">Total Pemasukan</span><span style="font-weight:700;color:var(--success)">Rp '+fmtRp(tI)+'</span></div><div style="display:flex;justify-content:space-between;padding:10px 12px;background:rgba(255,59,48,0.06);border-radius:var(--radius);border-left:3px solid var(--danger)"><span style="font-weight:600;color:var(--danger)">Total Pengeluaran</span><span style="font-weight:700;color:var(--danger)">Rp '+fmtRp(tO)+'</span></div><div style="display:flex;justify-content:space-between;padding:12px;background:'+(laba>=0?'rgba(0,122,255,0.08)':'rgba(255,59,48,0.08)')+';border-radius:var(--radius);border-left:3px solid '+(laba>=0?'var(--accent)':'var(--danger)')+'"><span style="font-weight:700;font-size:14px">'+(laba>=0?'✅ Laba Bersih':'⚠️ Rugi Bersih')+'</span><span style="font-weight:700;font-size:16px;color:'+(laba>=0?'var(--accent)':'var(--danger)')+'">Rp '+fmtRp(Math.abs(laba))+'</span></div></div>';const cats={};data.forEach(k=>{if(!cats[k.kat])cats[k.kat]={tipe:k.tipe,total:0};cats[k.kat].total+=k.nominal;});const sorted=Object.entries(cats).sort((a,b)=>b[1].total-a[1].total);el2.innerHTML=sorted.length?'<div style="display:flex;flex-direction:column;gap:6px">'+sorted.map(([kat,v])=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:8px"><span style="font-size:13px;color:'+(v.tipe==='in'?'var(--success)':'var(--danger)')+';">'+(v.tipe==='in'?'▲':'▼')+' '+kat+'</span><span style="font-weight:600;font-size:13px">Rp '+fmtRp(v.total)+'</span></div>').join('')+'</div>':'<div class="empty" style="padding:16px">Belum ada data</div>';}
 function renderKeuRiwayat(){const tipe=document.getElementById('keu-rw-tipe').value;const kat=document.getElementById('keu-rw-kat').value;const bln=document.getElementById('keu-rw-bln').value;let data=[...db.keuangan];if(tipe)data=data.filter(k=>k.tipe===tipe);if(kat)data=data.filter(k=>k.kat===kat);if(bln)data=data.filter(k=>k.tgl.startsWith(bln));data.sort((a,b)=>b.tgl.localeCompare(a.tgl));const tb=document.getElementById('body-keu-rw');if(!data.length){tb.innerHTML='<tr><td colspan="7"><div class="empty" style="padding:20px"><div class="empty-icon" style="font-size:24px">📋</div>Tidak ada transaksi</div></td></tr>';return;}tb.innerHTML='';data.forEach(k=>{const tr=document.createElement('tr');const badge=k.tipe==='in'?'<span class="badge badge-green">▲ Masuk</span>':'<span class="badge badge-red">▼ Keluar</span>';tr.innerHTML='<td>'+fmtTgl(k.tgl)+'</td><td>'+badge+'</td><td><b>'+k.kat+'</b></td><td style="color:var(--text2);font-size:12px">'+(k.ket||'—')+'</td><td class="num">'+(k.liter?k.liter.toFixed(1)+' L':'—')+'</td><td class="num" style="font-weight:700;color:'+(k.tipe==='in'?'var(--success)':'var(--danger)')+';">Rp '+fmtRp(k.nominal)+'</td><td></td>';const bH=document.createElement('button');bH.className='btn btn-xs btn-danger';bH.textContent='Hapus';bH.addEventListener('click',()=>{if(!confirm('Hapus transaksi ini?'))return;db.keuangan=db.keuangan.filter(x=>x.id!==k.id);sv();renderKeuangan();toast('Dihapus');});tr.cells[6].appendChild(bH);tb.appendChild(tr);});}
@@ -3204,6 +3943,7 @@ function renderAll(){
   if(document.getElementById('page-pakan').classList.contains('active')) renderPakan();
   if(document.getElementById('page-keuangan').classList.contains('active')) renderKeuangan();
   if(document.getElementById('page-rekap').classList.contains('active')) renderRekap();
+  if(document.getElementById('page-tabungan').classList.contains('active')) renderTabungan();
 }
 
 // EXPORT/IMPORT
