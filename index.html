@@ -1362,13 +1362,14 @@ function ld(){
 // syncFromSheets() — Ambil data terbaru dari Google Sheets
 // Dipanggil saat pertama buka, menimpa localStorage dengan data dari cloud
 let gridEditing = false; // Flag: true jika ada input susu yang sedang aktif diedit
+let distEditing = false; // Flag: true jika ada input distribusi pakan yang sedang aktif diedit
 
 function syncFromSheets(){
   const indicator = document.getElementById('sync-indicator');
   if(indicator) indicator.style.display = 'flex';
 
-  // Jangan timpa data jika pengguna sedang aktif menginput susu
-  if(gridEditing){
+  // Jangan timpa data jika pengguna sedang aktif menginput susu atau distribusi pakan
+  if(gridEditing || distEditing){
     if(indicator) indicator.style.display='none';
     showSyncStatus('✏️ Sedang input — sync ditunda', 'warn');
     return;
@@ -3096,7 +3097,12 @@ function buildDistGrid(){
     tr.innerHTML=`<td><b>${p.kode}</b></td><td>${p.nama}</td><td>${p.wilayah}</td><td class="num"></td><td class="num" id="dist-jual-${p.kode}">${nilaiJual>0?'Rp '+fmtRp(nilaiJual):'—'}</td><td class="num" id="dist-margin-${p.kode}" style="color:${margin>0?'var(--success)':margin<0?'var(--danger)':'var(--text2)'}">${nilaiJual>0?'Rp '+fmtRp(margin):'—'}</td>`;
     const inp=document.createElement('input'); inp.type='number'; inp.min='0'; inp.step='0.5';
     inp.value=zak||''; inp.placeholder='0'; inp.style.cssText='width:80px;text-align:right;height:28px;font-size:12px';
+    inp.className='dist-inp';
     inp.addEventListener('input',()=>updateDistRow(p.kode,parseFloat(inp.value)||0,hjual,hppTotal));
+    inp.addEventListener('focus',()=>{ inp.select(); distEditing=true; });
+    inp.addEventListener('blur',()=>{
+      setTimeout(()=>{ if(!document.activeElement?.classList.contains('dist-inp')) distEditing=false; }, 150);
+    });
     inp.dataset.kode=p.kode;
     tr.cells[3].appendChild(inp);
     tb.appendChild(tr);
@@ -3142,6 +3148,7 @@ document.getElementById('btn-pk-dist-simpan').addEventListener('click', ()=>{
     db.pakan_dist.push({ id:genId(), tgl, kode, nama:p.nama, wilayah:p.wilayah, zak, hjual, antar, hppTotal });
     n++;
   });
+  distEditing = false; // Reset flag agar sync bisa berjalan lagi
   sv(); renderPakan(); toast(`Distribusi ${n} peternak (${fmtTgl(tgl)}) tersimpan`,'ok');
 });
 
