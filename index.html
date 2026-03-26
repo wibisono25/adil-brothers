@@ -320,6 +320,83 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
 .keu-laba-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
 .keu-laba-row:last-child{border-bottom:none;font-weight:700;font-size:15px;padding-top:10px}
 
+/* ═══ SIDEBAR NAVIGASI DESKTOP ═══ */
+@media(min-width:768px){
+  .nav-wrap{
+    position:fixed;left:0;top:0;bottom:0;
+    width:230px;
+    border-right:1px solid var(--border);
+    border-bottom:none;
+    padding:72px 8px 20px 8px;
+    background:#fff!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    overflow-y:auto;
+    z-index:90;
+    box-shadow:2px 0 12px rgba(0,0,0,0.04);
+  }
+  .nav{flex-direction:column;gap:2px}
+  .nav-tab{
+    border-radius:10px;
+    padding:9px 12px;
+    text-align:left;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:13px;
+    width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .nav-tab.active{
+    background:var(--accent-light);
+    color:var(--accent);
+    box-shadow:none;
+    font-weight:600;
+  }
+  .nav-tab:hover{background:rgba(0,0,0,0.04);color:var(--text)}
+  .header{margin-left:230px;border-radius:0}
+  .container{margin-left:230px;max-width:none}
+}
+
+/* ═══ STAT CARDS GRADIENT ═══ */
+.stat.s-blue{background:linear-gradient(135deg,#007aff,#5856d6)}
+.stat.s-blue .stat-val{color:#fff}
+.stat.s-blue .stat-label,.stat.s-blue .stat-sub{color:rgba(255,255,255,0.82)}
+.stat.s-green{background:linear-gradient(135deg,#34c759,#28a745)}
+.stat.s-green .stat-val{color:#fff}
+.stat.s-green .stat-label,.stat.s-green .stat-sub{color:rgba(255,255,255,0.82)}
+.stat.s-red{background:linear-gradient(135deg,#ff3b30,#e0342a)}
+.stat.s-red .stat-val{color:#fff}
+.stat.s-red .stat-label,.stat.s-red .stat-sub{color:rgba(255,255,255,0.82)}
+.stat.s-orange{background:linear-gradient(135deg,#ff9500,#e07b00)}
+.stat.s-orange .stat-val{color:#fff}
+.stat.s-orange .stat-label,.stat.s-orange .stat-sub{color:rgba(255,255,255,0.82)}
+.stat.s-purple{background:linear-gradient(135deg,#af52de,#8944ab)}
+.stat.s-purple .stat-val{color:#fff}
+.stat.s-purple .stat-label,.stat.s-purple .stat-sub{color:rgba(255,255,255,0.82)}
+
+/* ═══ PENJUALAN ECERAN DASHBOARD ═══ */
+.eceran-wrap{background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);margin-bottom:14px}
+.eceran-hdr{background:linear-gradient(135deg,#ff9500,#ff6b00);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.eceran-hdr-info{color:#fff}
+.eceran-hdr-title{font-size:15px;font-weight:700;letter-spacing:-0.01em;display:flex;align-items:center;gap:6px}
+.eceran-hdr-sub{font-size:11px;color:rgba(255,255,255,0.82);margin-top:2px;font-weight:500}
+.eceran-hdr-right{display:flex;align-items:center;gap:16px}
+.eceran-sum-row{display:flex;gap:16px}
+.eceran-sum-item{text-align:center;color:#fff}
+.eceran-sum-val{font-size:15px;font-weight:700;line-height:1}
+.eceran-sum-lbl{font-size:10px;color:rgba(255,255,255,0.75);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+.eceran-sum-div{width:1px;background:rgba(255,255,255,0.25);align-self:stretch}
+.btn-eceran-tambah{background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;white-space:nowrap}
+.btn-eceran-tambah:hover{background:rgba(255,255,255,0.4)}
+.eceran-form{padding:14px 20px;background:rgba(255,149,0,0.06);border-bottom:1px solid var(--border);display:none}
+.eceran-form.open{display:block}
+.eceran-preview-total{font-size:12px;color:var(--accent2);font-weight:700;margin-top:8px}
+.eceran-tfoot td{padding:10px 14px;font-weight:700;background:rgba(255,149,0,0.08)}
+.eceran-tfoot .lbl{color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:0.04em}
+.eceran-tfoot .val{color:var(--accent2)}
 
 </style>
 </head>
@@ -416,6 +493,83 @@ tfoot td{padding:10px 14px;font-weight:700;background:var(--accent-light)}
   <div class="card" id="dash-sp-card">
     <div class="card-title"><span class="icon icon-purple">💰</span> SP Hampir Lunas <span style="font-size:12px;font-weight:500;color:var(--text2)">(sisa 1 cicilan)</span></div>
     <div id="dash-sp-list"></div>
+  </div>
+
+  <!-- ROW 4: PENJUALAN SUSU ECERAN -->
+  <div class="eceran-wrap">
+    <div class="eceran-hdr">
+      <div class="eceran-hdr-info">
+        <div class="eceran-hdr-title">🛒 Penjualan Susu Eceran Hari Ini</div>
+        <div class="eceran-hdr-sub" id="eceran-tgl-label"></div>
+      </div>
+      <div class="eceran-hdr-right">
+        <div class="eceran-sum-row" id="eceran-summary">
+          <div class="eceran-sum-item">
+            <div class="eceran-sum-val" id="eceran-sum-transaksi">0</div>
+            <div class="eceran-sum-lbl">Transaksi</div>
+          </div>
+          <div class="eceran-sum-div"></div>
+          <div class="eceran-sum-item">
+            <div class="eceran-sum-val" id="eceran-sum-liter">0 L</div>
+            <div class="eceran-sum-lbl">Total Liter</div>
+          </div>
+          <div class="eceran-sum-div"></div>
+          <div class="eceran-sum-item">
+            <div class="eceran-sum-val" id="eceran-sum-nominal">Rp 0</div>
+            <div class="eceran-sum-lbl">Total Uang</div>
+          </div>
+        </div>
+        <button class="btn-eceran-tambah" id="btn-eceran-toggle">+ Tambah</button>
+      </div>
+    </div>
+
+    <div class="eceran-form" id="eceran-form">
+      <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap">
+        <div style="min-width:130px">
+          <label>Tanggal</label>
+          <input type="date" id="eceran-tgl" style="width:100%">
+        </div>
+        <div style="min-width:90px">
+          <label>Liter</label>
+          <input type="number" id="eceran-liter" placeholder="0.0" step="0.1" style="width:100%">
+        </div>
+        <div style="min-width:110px">
+          <label>Harga/L (Rp)</label>
+          <input type="number" id="eceran-harga" placeholder="9000" style="width:100%">
+        </div>
+        <div style="min-width:120px">
+          <label>Total (Rp)</label>
+          <input type="number" id="eceran-nominal" placeholder="0" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label>Keterangan</label>
+          <input id="eceran-ket" placeholder="contoh: Pak Budi, RT 03 ..." style="width:100%">
+        </div>
+        <button class="btn btn-primary" id="btn-eceran-simpan">💾 Simpan</button>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Keterangan</th>
+            <th class="num">Liter</th>
+            <th class="num">Harga/L</th>
+            <th class="num">Total (Rp)</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="eceran-tbody"></tbody>
+        <tfoot class="eceran-tfoot" id="eceran-tfoot" style="display:none">
+          <tr>
+            <td colspan="3" class="lbl">TOTAL HARI INI</td>
+            <td class="num val" id="eceran-total-val"></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -3429,6 +3583,7 @@ function renderDashboard(){
   renderDashPakan();
   renderDashKeuangan();
   renderDashSP();
+  renderDashEceran();
 }
 
 function renderDashAlerts(){
@@ -3661,6 +3816,114 @@ function renderDashSP(){
       return '<div style="background:var(--purple-light);border-radius:var(--radius);padding:12px 14px;border-left:3px solid var(--purple)"><div style="font-weight:700;font-size:13px">'+p.nama+' <span style="font-size:11px;color:var(--text2)">'+pin.kode+'</span></div><div style="font-size:12px;color:var(--text2);margin-top:4px">Sisa: <b style="color:var(--purple)">Rp '+fmtRp(pin.sisa)+'</b> · 1 cicilan lagi</div></div>';
     }).join('')+'</div>';
 }
+
+// ════ PENJUALAN ECERAN DASHBOARD ════
+
+function renderDashEceran(){
+  const today = dts(new Date());
+  const lbl = document.getElementById('eceran-tgl-label');
+  if(lbl) lbl.textContent = fmtTgl(today);
+
+  // Set default date on form
+  const tglInput = document.getElementById('eceran-tgl');
+  if(tglInput && !tglInput.value) tglInput.value = today;
+
+  const data = db.keuangan.filter(k=>k.tipe==='in' && k.kat==='Lokal Eceran' && k.tgl===today);
+  const totalNominal = data.reduce((a,k)=>a+k.nominal, 0);
+  const totalLiter = data.reduce((a,k)=>a+(k.liter||0), 0);
+
+  // Update summary header
+  const elTx = document.getElementById('eceran-sum-transaksi');
+  const elL = document.getElementById('eceran-sum-liter');
+  const elN = document.getElementById('eceran-sum-nominal');
+  if(elTx) elTx.textContent = data.length;
+  if(elL) elL.textContent = totalLiter > 0 ? totalLiter.toFixed(1)+' L' : '0 L';
+  if(elN) elN.textContent = 'Rp '+fmtRp(totalNominal);
+
+  // Render table
+  const tbody = document.getElementById('eceran-tbody');
+  const tfoot = document.getElementById('eceran-tfoot');
+  const totalVal = document.getElementById('eceran-total-val');
+  if(!tbody) return;
+
+  if(!data.length){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text3);font-size:13px">Belum ada penjualan eceran hari ini</td></tr>';
+    if(tfoot) tfoot.style.display='none';
+    return;
+  }
+
+  tbody.innerHTML = data.map(function(k){
+    return '<tr>' +
+      '<td>'+(k.ket||'—')+'</td>' +
+      '<td class="num">'+(k.liter ? k.liter.toFixed(1)+' L' : '—')+'</td>' +
+      '<td class="num">'+(k.harga ? 'Rp '+fmtRp(k.harga) : '—')+'</td>' +
+      '<td class="num" style="font-weight:600;color:var(--accent2)">Rp '+fmtRp(k.nominal)+'</td>' +
+      '<td><button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" data-hapus-eceran="'+k.id+'">Hapus</button></td>' +
+    '</tr>';
+  }).join('');
+
+  if(tfoot){ tfoot.style.display='table-row-group'; }
+  if(totalVal) totalVal.textContent = 'Rp '+fmtRp(totalNominal);
+}
+
+// Event delegation: hapus eceran dari tbody
+document.getElementById('eceran-tbody').addEventListener('click', function(e){
+  const btn = e.target.closest('[data-hapus-eceran]');
+  if(!btn) return;
+  const id = btn.getAttribute('data-hapus-eceran');
+  if(!confirm('Hapus transaksi ini?')) return;
+  db.keuangan = db.keuangan.filter(k=>k.id!==id);
+  sv();
+  renderDashEceran();
+  toast('Transaksi dihapus','ok');
+});
+
+// Event listener: toggle form eceran
+document.getElementById('btn-eceran-toggle').addEventListener('click', function(){
+  const form = document.getElementById('eceran-form');
+  if(!form) return;
+  form.classList.toggle('open');
+  this.textContent = form.classList.contains('open') ? '✕ Tutup' : '+ Tambah';
+  if(form.classList.contains('open')){
+    const tglInput = document.getElementById('eceran-tgl');
+    if(tglInput && !tglInput.value) tglInput.value = dts(new Date());
+  }
+});
+
+// Auto-hitung total saat liter/harga berubah
+document.getElementById('eceran-liter').addEventListener('input', function(){
+  const l = parseFloat(this.value)||0;
+  const h = parseFloat(document.getElementById('eceran-harga').value)||9000;
+  if(l>0) document.getElementById('eceran-nominal').value = Math.round(l*h);
+});
+document.getElementById('eceran-harga').addEventListener('input', function(){
+  const l = parseFloat(document.getElementById('eceran-liter').value)||0;
+  const h = parseFloat(this.value)||0;
+  if(l>0 && h>0) document.getElementById('eceran-nominal').value = Math.round(l*h);
+});
+
+// Simpan penjualan eceran
+document.getElementById('btn-eceran-simpan').addEventListener('click', function(){
+  const tgl = document.getElementById('eceran-tgl').value;
+  const liter = parseFloat(document.getElementById('eceran-liter').value)||0;
+  const harga = parseFloat(document.getElementById('eceran-harga').value)||9000;
+  const nominal = parseFloat(document.getElementById('eceran-nominal').value)||0;
+  const ket = document.getElementById('eceran-ket').value.trim();
+  if(!tgl){ toast('Pilih tanggal dulu','err'); return; }
+  if(nominal<=0){ toast('Isi nominal dulu','err'); return; }
+  db.keuangan.push({
+    id: genId(),
+    tgl, tipe:'in', kat:'Lokal Eceran',
+    ket: ket || (liter>0 ? liter.toFixed(1)+' L' : ''),
+    liter: liter||null, harga: harga||null, nominal
+  });
+  sv();
+  document.getElementById('eceran-liter').value='';
+  document.getElementById('eceran-nominal').value='';
+  document.getElementById('eceran-ket').value='';
+  renderDashEceran();
+  toast('Penjualan Rp '+fmtRp(nominal)+' tersimpan!','ok');
+});
 
 
 // ============================================================
