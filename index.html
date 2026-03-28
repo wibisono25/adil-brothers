@@ -1590,6 +1590,7 @@
       <button class="btn-header" id="btn-sync-manual" title="Sinkron data dari Google Sheets">🔄 Sinkron</button>
       <button class="btn-header" id="btn-export">⬇ Export</button>
       <button class="btn-header" id="btn-import-trigger">⬆ Import</button>
+      <button class="btn-header" id="btn-migrate-supabase" style="background:#ef4444;color:white;margin-left:10px">🚀 Reset & Mulai Baru</button>
       <input type="file" id="btn-import" accept=".json" style="display:none">
     </div>
   </div>
@@ -2798,9 +2799,18 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (function () {
       'use strict';
+
+      // ════════════════════════════════════
+      // SUPABASE CONFIGURATION
+      // ════════════════════════════════════
+      const SUPABASE_URL = 'https://juxoxoikpmjmoluorixh.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1eG94b2lrcG1qbW9sdW9yaXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NzIxMzMsImV4cCI6MjA5MDI0ODEzM30.bw6Xv-d2nka9KlM9MSVdaHaDfC3XxCi3ewQwV2Ll4nA';
+      // Initialize Supabase Client
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
       // ════════════════════════════════════
       // STATE
@@ -2827,16 +2837,9 @@
       let slipState = { dari: null, sampai: null, kode: null };
 
       // ════════════════════════════════════
-      // STORAGE
+      // STORAGE & SYNC
       // ════════════════════════════════════
-      // ============================================================
-      // FUNGSI PENYIMPANAN DATA
-      // ============================================================
-      // sv() = "save" — Simpan seluruh isi db ke localStorage browser
-      // localStorage adalah penyimpanan di browser, data tidak hilang walau halaman ditutup
-      // JSON.stringify() mengubah objek JavaScript menjadi teks agar bisa disimpan
-      // defaultJadwal() — Jadwal pengiriman default sesuai operasional Glagaharum
-      // Dipakai pertama kali atau saat jadwal belum ada di data tersimpan
+      
       function defaultJadwal() {
         return [
           { id: 'j1', day: 2, hari: 'Selasa', tujuan: 'UMKM Tahu Susu', harga: 8500, catatan: '~1.300 L' },
@@ -2846,83 +2849,251 @@
         ];
       }
 
-      // ============================================================
-      // KONFIGURASI GOOGLE SHEETS
-      // URL ini adalah alamat Apps Script yang menjadi jembatan
-      // antara aplikasi HTML dan Google Sheets database
-      // ============================================================
-      const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz0KNtzbKKu-kr0n4ewSj_LpLMF5lEw2J0JKw8S1P4T24RV2gNsuDyEzhcQB1soyLFMAA/exec';
-
-      // sv() = "save" — Simpan data ke Google Sheets DAN localStorage (backup lokal)
-      // Dual-save: Sheets = cloud permanen, localStorage = backup cepat offline
-      function sv() {
+      // sv() = "save" — Simpan data ke Supabase DAN localStorage (backup lokal)
+      // Dual-save: Supabase = cloud permanen, localStorage = backup cepat offline
+      async function sv() {
         // 1. Simpan ke localStorage dulu (cepat, offline)
         try { localStorage.setItem('glghrm_v2', JSON.stringify(db)); } catch (e) { }
-        // 2. Simpan ke Google Sheets (cloud, permanen)
-        // fetch() = kirim data ke server — seperti mengirim pesan ke Google
-        // Tidak menunggu respons (fire and forget) agar aplikasi tidak lambat
+        
+        // 2. Simpan ke Supabase (cloud, permanen)
         try {
-          fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(db)
-          }).catch(() => { }); // abaikan error jaringan — localStorage tetap tersimpan
-        } catch (e) { }
+          await pushToSupabase();
+          showSyncStatus('✅ Tersimpan ke Cloud', 'ok');
+        } catch (e) {
+          console.error('Supabase save error:', e);
+          showSyncStatus('❌ Cloud gagal (Disimpan lokal)', 'err');
+        }
       }
 
-      // ld() = "load" — Ambil data dari Google Sheets saat pertama buka
-      // Kalau Sheets tidak bisa diakses (offline), fallback ke localStorage
-      function ld() {
-        // Coba muat dari localStorage dulu agar aplikasi langsung tampil
+      // pushToSupabase() — Helper untuk mengunggah semua tabel ke Supabase
+      async function pushToSupabase() {
+        const promises = [];
+
+        // App Config (Objek non-relasional)
+        promises.push(supabase.from('app_config').upsert([
+          { key: 'pot_rekap', value: db.pot_rekap },
+          { key: 'hutang_bergulir', value: db.hutang_bergulir },
+          { key: 'rekap_diproses', value: db.rekap_diproses }
+        ]));
+
+        // Wilayah
+        if (db.wilayah && db.wilayah.length) {
+          promises.push(supabase.from('wilayah').upsert(db.wilayah.map(name => ({ name }))));
+        }
+
+        // Peternak
+        if (db.peternak && db.peternak.length) {
+          promises.push(supabase.from('peternak').upsert(db.peternak.map(p => ({
+            kode: p.kode, nama: p.nama, wilayah_name: p.wilayah, tab: p.tab || 200, status: p.status || 'aktif'
+          }))));
+        }
+
+        // Susu (Batch upsert)
+        if (db.susu && db.susu.length) {
+          promises.push(supabase.from('susu').upsert(db.susu.map(s => ({
+            tgl: s.tgl, peternak_kode: s.kode, pagi: s.pagi || 0, sore: s.sore || 0
+          }))));
+        }
+
+        // Pinjaman & Beras
+        if (db.pinjaman && db.pinjaman.length) {
+          promises.push(supabase.from('pinjaman').upsert(db.pinjaman.map(p => ({
+            id: p.id, peternak_kode: p.kode, tgl: p.tgl, nominal: p.nominal, cicilan: p.cicilan, 
+            sisa: p.sisa, riwayat_cicilan: p.riwayatCicilan || [], ket: p.ket, lunas: p.lunas || false, tgl_lunas: p.tglLunas
+          }))));
+        }
+        if (db.beras && db.beras.length) {
+          promises.push(supabase.from('beras').upsert(db.beras.map(b => ({
+            id: b.id, peternak_kode: b.kode, tgl: b.tgl, nominal: b.nominal, cicilan: b.cicilan, 
+            sisa: b.sisa, riwayat_cicilan: b.riwayatCicilan || [], ket: b.ket, lunas: b.lunas || false, tgl_lunas: b.tglLunas
+          }))));
+        }
+
+        // Keuangan
+        if (db.keuangan && db.keuangan.length) {
+          promises.push(supabase.from('keuangan').upsert(db.keuangan.map(k => ({
+            id: k.id, tgl: k.tgl, tipe: k.tipe, kategori: k.kat, keterangan: k.ket, volume: k.liter, nominal: k.nominal
+          }))));
+        }
+
+        // Karyawan
+        if (db.karyawan && db.karyawan.length) {
+          promises.push(supabase.from('karyawan').upsert(db.karyawan.map(k => ({
+            id: k.id, nama: k.nama, jabatan: k.jabatan, gaji: k.gaji, tunjangan: k.tunjangan, aktif: k.aktif
+          }))));
+        }
+
+        // Pakan
+        if (db.pakan_masuk && db.pakan_masuk.length) {
+          promises.push(supabase.from('pakan_masuk').upsert(db.pakan_masuk.map(m => ({
+            id: m.id, tgl: m.tgl, zak: m.zak, hbeli: m.hbeli, bongkar: m.bongkar, ket: m.ket
+          }))));
+        }
+        if (db.pakan_dist && db.pakan_dist.length) {
+          promises.push(supabase.from('pakan_dist').upsert(db.pakan_dist.map(d => ({
+            id: d.id, tgl: d.tgl, peternak_kode: d.kode, nama: d.nama, wilayah: d.wilayah, 
+            zak: d.zak, hjual: d.hjual, antar: d.antar, hpp_total: d.hppTotal
+          }))));
+        }
+
+        // Jadwal Kirim
+        if (db.jadwal_kirim && db.jadwal_kirim.length) {
+          promises.push(supabase.from('jadwal_kirim').upsert(db.jadwal_kirim.map(j => ({
+            id: j.id, day_num: j.day, hari: j.hari, tujuan: j.tujuan, harga: j.harga, catatan: j.catatan
+          }))));
+        }
+
+        const results = await Promise.all(promises);
+        const errors = results.filter(r => r.error);
+        if (errors.length) {
+          console.error('Errors during push to Supabase:', errors);
+          throw new Error('Beberapa tabel gagal diunggah');
+        }
+      }
+
+      // ld() = "load" — Ambil data dari Supabase saat pertama buka
+      // Kalau Supabase tidak bisa diakses, fallback ke localStorage
+      async function ld() {
+        // 1. Muat dari localStorage dulu agar UI cepat tampil
         try {
           const s = localStorage.getItem('glghrm_v2');
-          if (!s) {
-            const s1 = localStorage.getItem('glghrm_v1');
-            if (s1) { const old = JSON.parse(s1); db = Object.assign({ wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [], pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [], karyawan: defaultKaryawan(), hutang_bergulir: {}, rekap_diproses: {}, jadwal_kirim: defaultJadwal() }, old); sv(); }
-          } else {
+          if (s) {
             const parsed = JSON.parse(s);
-            if (!parsed.karyawan || !parsed.karyawan.length) parsed.karyawan = defaultKaryawan();
-            if (!parsed.jadwal_kirim || !parsed.jadwal_kirim.length) parsed.jadwal_kirim = defaultJadwal();
-            db = Object.assign({ wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [], pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [], karyawan: [], hutang_bergulir: {}, rekap_diproses: {}, jadwal_kirim: [] }, parsed);
+            db = Object.assign(db, parsed);
+            renderAll();
           }
         } catch (e) { }
 
-        // Lalu sinkron dari Google Sheets di background
-        // Ini memastikan data selalu up-to-date kalau dibuka dari perangkat lain
-        syncFromSheets();
+        // 2. Tarik data terbaru dari Supabase
+        await syncFromSupabase();
       }
 
-      // syncFromSheets() — Ambil data terbaru dari Google Sheets
-      // Dipanggil saat pertama buka, menimpa localStorage dengan data dari cloud
-      let gridEditing = false; // Flag: true jika ada input susu yang sedang aktif diedit
+      // syncFromSupabase() — Ambil data terbaru dari semua tabel Supabase
+      let gridEditing = false; 
 
-      function syncFromSheets() {
+      async function syncFromSupabase() {
         const indicator = document.getElementById('sync-indicator');
         if (indicator) indicator.style.display = 'flex';
 
-        // Jangan timpa data jika pengguna sedang aktif menginput susu
         if (gridEditing) {
           if (indicator) indicator.style.display = 'none';
-          showSyncStatus('✏️ Sedang input — sync ditunda', 'warn');
+          showSyncStatus('✏️ Input aktif — sync tunda', 'warn');
           return;
         }
 
-        fetch(GOOGLE_SCRIPT_URL + '?action=load')
-          .then(r => r.json())
-          .then(data => {
-            if (data && data.peternak !== undefined) {
-              if (!data.karyawan || !data.karyawan.length) data.karyawan = defaultKaryawan();
-              if (!data.jadwal_kirim || !data.jadwal_kirim.length) data.jadwal_kirim = defaultJadwal();
-              db = Object.assign({ wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [], pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [], karyawan: [], hutang_bergulir: {}, rekap_diproses: {}, jadwal_kirim: [] }, data);
-              try { localStorage.setItem('glghrm_v2', JSON.stringify(db)); } catch (e) { }
-              renderAll();
-            }
-            if (indicator) indicator.style.display = 'none';
-            showSyncStatus('✅ Tersinkron dengan Google Sheets', 'ok');
-          })
-          .catch(() => {
-            if (indicator) indicator.style.display = 'none';
-            showSyncStatus('📴 Offline — data dari cache lokal', 'warn');
+        try {
+          const res = await Promise.all([
+            supabase.from('app_config').select('*'),
+            supabase.from('wilayah').select('*'),
+            supabase.from('peternak').select('*'),
+            supabase.from('susu').select('*'),
+            supabase.from('pinjaman').select('*'),
+            supabase.from('beras').select('*'),
+            supabase.from('keuangan').select('*'),
+            supabase.from('karyawan').select('*'),
+            supabase.from('pakan_masuk').select('*'),
+            supabase.from('pakan_dist').select('*'),
+            supabase.from('jadwal_kirim').select('*')
+          ]);
+
+          const errors = res.filter(r => r.error);
+          if (errors.length) throw new Error('Gagal menarik data dari Supabase');
+
+          // Rekonstruksi DB
+          const [conf, wil, pet, sus, pin, ber, keu, kar, pkm, pkd, jdk] = res.map(r => r.data);
+
+          // Mapping App Config
+          const configMap = {};
+          conf.forEach(c => configMap[c.key] = c.value);
+          
+          db.pot_rekap = configMap.pot_rekap || {};
+          db.hutang_bergulir = configMap.hutang_bergulir || {};
+          db.rekap_diproses = configMap.rekap_diproses || {};
+
+          db.wilayah = (wil || []).map(w => w.name);
+          db.peternak = (pet || []).map(p => ({
+            kode: p.kode, nama: p.nama, wilayah: p.wilayah_name, tab: p.tab, status: p.status
+          }));
+          db.susu = (sus || []).map(s => ({
+            tgl: s.tgl, kode: s.peternak_kode, pagi: s.pagi, sore: s.sore
+          }));
+          db.pinjaman = (pin || []).map(p => ({
+            id: p.id, kode: p.peternak_kode, tgl: p.tgl, nominal: p.nominal, cicilan: p.cicilan,
+            sisa: p.sisa, riwayatCicilan: p.riwayat_cicilan, ket: p.ket, lunas: p.lunas, tglLunas: p.tgl_lunas
+          }));
+          db.beras = (ber || []).map(b => ({
+            id: b.id, kode: b.peternak_kode, tgl: b.tgl, nominal: b.nominal, cicilan: b.cicilan,
+            sisa: b.sisa, riwayatCicilan: b.riwayat_cicilan, ket: b.ket, lunas: b.lunas, tglLunas: b.tgl_lunas
+          }));
+          db.keuangan = (keu || []).map(k => ({
+            id: k.id, tgl: k.tgl, tipe: k.tipe, kat: k.kategori, ket: k.keterangan, liter: k.volume, nominal: k.nominal
+          }));
+          db.karyawan = (kar || []).map(k => ({
+            id: k.id, nama: k.nama, jabatan: k.jabatan, gaji: k.gaji, tunjangan: k.tunjangan, aktif: k.aktif
+          }));
+          db.pakan_masuk = (pkm || []).map(m => ({
+            id: m.id, tgl: m.tgl, zak: m.zak, hbeli: m.hbeli, bongkar: m.bongkar, ket: m.ket
+          }));
+          db.pakan_dist = (pkd || []).map(d => ({
+            id: d.id, tgl: d.tgl, kode: d.peternak_kode, nama: d.nama, wilayah: d.wilayah,
+            zak: d.zak, hjual: d.hjual, antar: d.antar, hppTotal: d.hpp_total
+          }));
+          db.jadwal_kirim = (jdk || []).map(j => ({
+            id: j.id, day: j.day_num, hari: j.hari, tujuan: j.tujuan, harga: j.harga, catatan: j.catatan
+          }));
+
+          // Backup ke localStorage
+          localStorage.setItem('glghrm_v2', JSON.stringify(db));
+          
+          renderAll();
+          showSyncStatus('✅ Sync Cloud Berhasil', 'ok');
+        } catch (e) {
+          console.error('Supabase load error:', e);
+          showSyncStatus('❌ Sinkron Cloud gagal', 'err');
+        } finally {
+          if (indicator) indicator.style.display = 'none';
+        }
+      }
+
+      // migrateToSupabase() — Unggah seluruh data lokal ke Supabase (Initial Migration)
+      // resetAndStartFresh() — Menghapus SEMUA data lokal & cloud untuk mulai dari nol
+      async function resetAndStartFresh() {
+        if (!confirm('⚠️ PERINGATAN KERAS: Tindakan ini akan MENGHAPUS SELURUH data di komputer ini dan di Supabase (Cloud).\n\nApakah Anda sudah yakin dan sudah membackup data Anda?')) return;
+        if (prompt('Ketik "KONFIRMASI" untuk melanjutkan penghapusan:') !== 'KONFIRMASI') return;
+        
+        toast('🚀 Sedang membersihkan data...', 'warn');
+        try {
+          // 1. Kosongkan State Lokal
+          db = { 
+            wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [], 
+            pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [], 
+            karyawan: defaultKaryawan(), hutang_bergulir: {}, rekap_diproses: {}, jadwal_kirim: defaultJadwal() 
+          };
+          
+          // 2. Bersihkan LocalStorage
+          localStorage.removeItem('glghrm_v2');
+          
+          // 3. Bersihkan Cloud (Supabase) — Hapus semua baris di tabel utama
+          const tables = ['susu', 'pinjaman', 'beras', 'keuangan', 'pakan_dist', 'pakan_masuk', 'peternak', 'wilayah', 'jadwal_kirim', 'app_config', 'karyawan'];
+          const delPromises = tables.map(t => {
+            // Kita coba hapus semua baris. Karena tiap tabel punya primary key berbeda, 
+            // cara paling umum di Supabase JS adalah filter yang selalu true.
+            if (t === 'wilayah') return supabase.from(t).delete().neq('name', '___NONE___');
+            if (t === 'app_config') return supabase.from(t).delete().neq('key', '___NONE___');
+            if (t === 'peternak') return supabase.from(t).delete().neq('kode', '___NONE___');
+            return supabase.from(t).delete().neq('id', '___NONE___');
           });
+          
+          await Promise.all(delPromises);
+
+          // 4. Inisialisasi ulang tampilan
+          renderAll();
+          toast('✅ Sistem Berhasil Direset! Silakan mulai input baru.', 'ok');
+          sv(); // Simpan state kosong ke cloud sebagai penanda
+        } catch (err) {
+          console.error('Reset error:', err);
+          toast('❌ Reset Gagal/Parsial: ' + err.message, 'err');
+        }
       }
 
       // showSyncStatus() — Tampilkan status koneksi Sheets di pojok layar
@@ -5547,17 +5718,17 @@
       document.getElementById('btn-export').addEventListener('click', exportData);
       document.getElementById('btn-import-trigger').addEventListener('click', () => document.getElementById('btn-import').click());
       document.getElementById('btn-import').addEventListener('change', e => { if (e.target.files[0]) { importData(e.target.files[0]); e.target.value = ''; } });
+      document.getElementById('btn-migrate-supabase').addEventListener('click', resetAndStartFresh);
 
-      // Tombol sinkron manual — tarik data terbaru dari Sheets sekarang
+      // Tombol sinkron manual — tarik data terbaru dari Supabase sekarang
       document.getElementById('btn-sync-manual').addEventListener('click', () => {
         showSyncStatus('🔄 Mengambil data terbaru...', 'ok');
-        syncFromSheets();
+        syncFromSupabase();
       });
 
-      // Auto-sinkron setiap 30 detik — agar data dari HP otomatis muncul di laptop
-      // Tanpa perlu refresh halaman manual
+      // Auto-sinkron setiap 30 detik — agar data antar perangkat otomatis muncul
       setInterval(() => {
-        syncFromSheets();
+        syncFromSupabase();
       }, 30000);
 
       // ════════════════════════════════════
