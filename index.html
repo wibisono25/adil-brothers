@@ -1591,7 +1591,8 @@
       <button class="btn-header" id="btn-export">⬇ Export</button>
       <button class="btn-header" id="btn-import-trigger">⬆ Import</button>
       <!-- Tombol Reset disembunyikan (display:none) agar tidak sengaja tertekan saat operasional harian -->
-      <button class="btn-header" id="btn-migrate-supabase" style="display:none;background:#ef4444;color:white;margin-left:10px">🚀 Reset & Mulai Baru</button>
+      <button class="btn-header" id="btn-migrate-supabase"
+        style="display:none;background:#ef4444;color:white;margin-left:10px">🚀 Reset & Mulai Baru</button>
       <input type="file" id="btn-import" accept=".json" style="display:none">
     </div>
   </div>
@@ -2841,7 +2842,7 @@
       // ════════════════════════════════════
       // STORAGE & SYNC
       // ════════════════════════════════════
-      
+
       function defaultJadwal() {
         return [
           { id: 'j1', day: 2, hari: 'Selasa', tujuan: 'UMKM Tahu Susu', harga: 8500, catatan: '~1.300 L' },
@@ -2856,7 +2857,7 @@
       async function sv() {
         // 1. Simpan ke localStorage dulu (cepat, offline)
         try { localStorage.setItem('glghrm_v2', JSON.stringify(db)); } catch (e) { }
-        
+
         // 2. Simpan ke Supabase (cloud, permanen)
         try {
           await pushToSupabase();
@@ -2900,13 +2901,13 @@
         // Pinjaman & Beras
         if (db.pinjaman && db.pinjaman.length) {
           promises.push(sb.from('pinjaman').upsert(db.pinjaman.map(p => ({
-            id: p.id, peternak_kode: p.kode, tgl: p.tgl, nominal: p.nominal, cicilan: p.cicilan, 
+            id: p.id, peternak_kode: p.kode, tgl: p.tgl, nominal: p.nominal, cicilan: p.cicilan,
             sisa: p.sisa, riwayat_cicilan: p.riwayatCicilan || [], ket: p.ket, lunas: p.lunas || false, tgl_lunas: p.tglLunas
           }))));
         }
         if (db.beras && db.beras.length) {
           promises.push(sb.from('beras').upsert(db.beras.map(b => ({
-            id: b.id, peternak_kode: b.kode, tgl: b.tgl, nominal: b.nominal, cicilan: b.cicilan, 
+            id: b.id, peternak_kode: b.kode, tgl: b.tgl, nominal: b.nominal, cicilan: b.cicilan,
             sisa: b.sisa, riwayat_cicilan: b.riwayatCicilan || [], ket: b.ket, lunas: b.lunas || false, tgl_lunas: b.tglLunas
           }))));
         }
@@ -2933,7 +2934,7 @@
         }
         if (db.pakan_dist && db.pakan_dist.length) {
           promises.push(sb.from('pakan_dist').upsert(db.pakan_dist.map(d => ({
-            id: d.id, tgl: d.tgl, peternak_kode: d.kode, nama: d.nama, wilayah: d.wilayah, 
+            id: d.id, tgl: d.tgl, peternak_kode: d.kode, nama: d.nama, wilayah: d.wilayah,
             zak: d.zak, hjual: d.hjual, antar: d.antar, hpp_total: d.hppTotal
           }))));
         }
@@ -2971,7 +2972,7 @@
       }
 
       // syncFromSupabase() — Ambil data terbaru dari semua tabel Supabase
-      let gridEditing = false; 
+      let gridEditing = false;
 
       async function syncFromSupabase() {
         const indicator = document.getElementById('sync-indicator');
@@ -3000,7 +3001,7 @@
 
           const firstError = results.find(r => r.error);
           if (firstError) throw new Error(`${firstError.error.message} (${firstError.error.code})`);
-          
+
           const res = results;
 
           // Rekonstruksi DB
@@ -3009,7 +3010,7 @@
           // Mapping App Config
           const configMap = {};
           conf.forEach(c => configMap[c.key] = c.value);
-          
+
           db.pot_rekap = configMap.pot_rekap || {};
           db.hutang_bergulir = configMap.hutang_bergulir || {};
           db.rekap_diproses = configMap.rekap_diproses || {};
@@ -3018,6 +3019,7 @@
           db.peternak = (pet || []).map(p => ({
             kode: p.kode, nama: p.nama, wilayah: p.wilayah_name, tab: p.tab, status: p.status
           }));
+          sortPet();
           db.susu = (sus || []).map(s => ({
             tgl: s.tgl, kode: s.peternak_kode, pagi: s.pagi, sore: s.sore
           }));
@@ -3048,7 +3050,7 @@
 
           // Backup ke localStorage
           localStorage.setItem('glghrm_v2', JSON.stringify(db));
-          
+
           renderAll();
           showSyncStatus('✅ Sync Cloud Berhasil', 'ok');
         } catch (e) {
@@ -3064,19 +3066,19 @@
       async function resetAndStartFresh() {
         if (!confirm('⚠️ PERINGATAN KERAS: Tindakan ini akan MENGHAPUS SELURUH data di komputer ini dan di Supabase (Cloud).\n\nApakah Anda sudah yakin dan sudah membackup data Anda?')) return;
         if (prompt('Ketik "KONFIRMASI" untuk melanjutkan penghapusan:') !== 'KONFIRMASI') return;
-        
+
         toast('🚀 Sedang membersihkan data...', 'warn');
         try {
           // 1. Kosongkan State Lokal
-          db = { 
-            wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [], 
-            pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [], 
-            karyawan: defaultKaryawan(), hutang_bergulir: {}, rekap_diproses: {}, jadwal_kirim: defaultJadwal() 
+          db = {
+            wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [],
+            pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [],
+            karyawan: defaultKaryawan(), hutang_bergulir: {}, rekap_diproses: {}, jadwal_kirim: defaultJadwal()
           };
-          
+
           // 2. Bersihkan LocalStorage
           localStorage.removeItem('glghrm_v2');
-          
+
           // 3. Bersihkan Cloud (Supabase) — Hapus semua baris di tabel utama
           const tables = ['susu', 'pinjaman', 'beras', 'keuangan', 'pakan_dist', 'pakan_masuk', 'peternak', 'wilayah', 'jadwal_kirim', 'app_config', 'karyawan'];
           const delPromises = tables.map(t => {
@@ -3087,7 +3089,7 @@
             if (t === 'peternak') return sb.from(t).delete().neq('kode', '___NONE___');
             return sb.from(t).delete().neq('id', '___NONE___');
           });
-          
+
           await Promise.all(delPromises);
 
           // 4. Inisialisasi ulang tampilan
@@ -3167,13 +3169,22 @@
       // UTILS
       // ════════════════════════════════════
       // ============================================================
+      function fmtRp(v) { if (!v && v !== 0) return '-'; return v.toLocaleString('id-ID'); }
+      function fmtTgl(s) { if (!s) return '-'; const p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+      function fmtTglShort(s) { if (!s) return '-'; const p = s.split('-'); return p[2] + '/' + p[1]; }
+      function dts(d) { return d.toISOString().split('T')[0]; }
+
+      // utility sort peternak secara "natural" (GL1, GL2, GL11...)
+      function sortPet() {
+        if (db.peternak) {
+          db.peternak.sort((a, b) => a.kode.localeCompare(b.kode, undefined, { numeric: true, sensitivity: 'base' }));
+        }
+      }
+
       // FUNGSI PEMBANTU (UTILITY)
       // Fungsi-fungsi kecil yang dipakai berulang di seluruh kode
       // ============================================================
 
-      // dts() = "date to string" — Ubah objek Date menjadi format "YYYY-MM-DD"
-      // Contoh: new Date() → "2026-03-23"
-      // Format ini dipakai untuk menyimpan tanggal di database
       function dts(d) { return d instanceof Date ? d.toISOString().split('T')[0] : d; }
       // fmtTgl() = "format tanggal" — Ubah "YYYY-MM-DD" menjadi tampilan manusia
       // Contoh: "2026-03-23" → "Sen, 23 Mar 2026"
@@ -3345,12 +3356,13 @@
         if (!wil) { toast('Pilih wilayah', 'err'); return; }
         // Jika kode kosong, generate otomatis
         let finalKode = kode;
-        if (!finalKode) { 
+        if (!finalKode) {
           autoGenerateCode(wil, 'p-kode');
           finalKode = document.getElementById('p-kode').value;
         }
         if (db.peternak.find(p => p.kode === finalKode)) { toast('Kode sudah ada', 'warn'); return; }
-        db.peternak.push({ kode: finalKode, nama, wilayah: wil, tab, status: 'aktif' }); sv(); renderP(); renderW();
+        db.peternak.push({ kode: finalKode, nama, wilayah: wil, tab, status: 'aktif' });
+        sortPet(); sv(); renderP(); renderW();
         document.getElementById('p-kode').value = ''; document.getElementById('p-nama').value = '';
         document.getElementById('p-kode').focus();
         toast(nama + ' ditambahkan');
@@ -3395,8 +3407,11 @@
         if (finalKode !== orig && db.peternak.find(p => p.kode === finalKode)) { toast('Kode sudah dipakai', 'err'); return; }
         const idx = db.peternak.findIndex(p => p.kode === orig); if (idx < 0) return;
         db.peternak[idx] = { kode: finalKode, nama, wilayah: wil, tab, status };
-        if (kode !== orig) { db.susu.forEach(s => { if (s.kode === orig) s.kode = kode; }); db.pinjaman.forEach(pin => { if (pin.kode === orig) pin.kode = kode; }); }
-        sv(); renderP(); renderW();
+        if (kode !== orig) {
+          db.susu.forEach(s => { if (s.kode === orig) s.kode = kode; });
+          db.pinjaman.forEach(pin => { if (pin.kode === orig) pin.kode = kode; });
+        }
+        sortPet(); sv(); renderP(); renderW();
         document.getElementById('modal-edit').classList.remove('open');
         toast('Data diperbarui');
       });
@@ -4200,21 +4215,22 @@
         const harga = parseFloat(document.getElementById('rek-harga').value) || 7300;
         const hpakan = parseFloat(document.getElementById('rek-hpakan').value) || 225000;
         const data = db.susu.filter(s => s.tgl >= dari && s.tgl <= sampai);
-        
+
         toast('Sedang membuat laporan...', 'info');
-        
-        let rows = ''; 
+
+        let rows = '';
         let tL = 0, tB = 0, tSP = 0, tBer = 0, tMin = 0, tLain = 0, tPak = 0, tTab = 0, tHB = 0, tN = 0, tHG = 0, n = 0;
-        
-        // Urutkan peternak berdasarkan nama
-        const activePeternak = db.peternak.filter(p => p.status === 'aktif').sort((a,b) => a.nama.localeCompare(b.nama));
-        
+
+        // Urutkan peternak secara natural (GL1, GL2, GL11...)
+        const activePeternak = db.peternak.filter(p => p.status === 'aktif')
+          .sort((a, b) => a.kode.localeCompare(b.kode, undefined, { numeric: true, sensitivity: 'base' }));
+
         activePeternak.forEach(p => {
-          const r = hitungRekap(p, data, dari, sampai, harga, hpakan); 
-          if (!r.liter) return; 
+          const r = hitungRekap(p, data, dari, sampai, harga, hpakan);
+          if (!r.liter) return;
           n++;
           tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += r.bersih; tHG += r.hutangGulung;
-          
+
           rows += `
             <tr>
               <td>${n}</td>
@@ -4304,25 +4320,25 @@
         `;
 
         const container = document.createElement('div');
-        container.style.cssText = 'width:280mm;position:absolute;left:-9999px;top:0'; 
+        container.style.cssText = 'width:280mm;position:absolute;left:-9999px;top:0';
         container.innerHTML = html;
         document.body.appendChild(container);
 
         try {
-          const opt = { 
-            margin: 5, 
-            filename: `Rekap_Pembayaran_${dari}_${sampai}.pdf`, 
-            image: { type: 'jpeg', quality: 0.98 }, 
-            html2canvas: { scale: 2, useCORS: true }, 
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } 
+          const opt = {
+            margin: 5,
+            filename: `Rekap_Pembayaran_${dari}_${sampai}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
           };
           await html2pdf().set(opt).from(container).save();
           toast('Laporan PDF berhasil di-download!', 'ok');
-        } catch (err) { 
+        } catch (err) {
           console.error(err);
-          toast('Gagal generate PDF: ' + err.message, 'err'); 
-        } finally { 
-          document.body.removeChild(container); 
+          toast('Gagal generate PDF: ' + err.message, 'err');
+        } finally {
+          document.body.removeChild(container);
         }
       }
 
