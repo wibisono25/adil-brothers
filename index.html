@@ -66,7 +66,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 62px;
+      height: 120px;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -1171,8 +1171,8 @@
       }
 
       .mobile-header-logo {
-        width: 36px;
-        height: 36px;
+        width: 48px;
+        height: 48px;
         border-radius: 8px;
         overflow: hidden;
         flex-shrink: 0;
@@ -1571,6 +1571,10 @@
 
   <div class="header">
     <div class="header-brand">
+      <div class="header-logo"
+        style="width:100px;height:100px;background:none;box-shadow:none;overflow:hidden;padding:1px;border-radius:6px">
+        <img src="ChatGPT Image 28 Mar 2026, 09.47.25.png" style="width:100%;height:100%;object-fit:contain">
+      </div>
 
       <div>
         <div class="header-title">Adil Brothers Fresh Milks</div>
@@ -3102,6 +3106,49 @@
       document.getElementById('filter-w').addEventListener('change', renderP);
       document.getElementById('filter-s').addEventListener('change', renderP);
 
+      // ════════════════════════════════════
+      // LOGIKA KODE WILAYAH PETERNAK
+      // ════════════════════════════════════
+      const PREFIX_MAP = {
+        'PANCEN': 'PC',
+        'PERSIL': 'PS',
+        'KANDANGAN': 'KD',
+        'KARANGANYAR': 'KA',
+        'GLAGAHARUM': 'GL',
+        'TETELAN': 'TL',
+        'PASAR SAYUR': 'PY'
+      };
+
+      function autoGenerateCode(wil, targetId) {
+        if (!wil) return;
+        const prefix = PREFIX_MAP[wil.toUpperCase()];
+        if (!prefix) return;
+        const codes = db.peternak.filter(p => p.kode.startsWith(prefix)).map(p => {
+          const n = parseInt(p.kode.replace(prefix, ''));
+          return isNaN(n) ? 0 : n;
+        });
+        const nextNum = codes.length > 0 ? Math.max(...codes) + 1 : 1;
+        document.getElementById(targetId).value = prefix + nextNum;
+      }
+
+      function autoSelectWilayah(kode, targetId) {
+        const k = kode.trim().toUpperCase();
+        for (const [w, p] of Object.entries(PREFIX_MAP)) {
+          if (k.startsWith(p)) {
+            const el = document.getElementById(targetId);
+            if (el) el.value = w;
+            return;
+          }
+        }
+      }
+
+      document.getElementById('p-wilayah').addEventListener('change', e => autoGenerateCode(e.target.value, 'p-kode'));
+      document.getElementById('p-kode').addEventListener('input', e => autoSelectWilayah(e.target.value, 'p-wilayah'));
+      // Listener untuk modal edit (ID: edit-wil dan edit-kode) ditambahkan secara dinamis di editP()
+      // Namun kita bisa pasang sekali saja jika ID nya tetap
+      document.body.addEventListener('change', e => { if (e.target.id === 'edit-wil') autoGenerateCode(e.target.value, 'edit-kode'); });
+      document.body.addEventListener('input', e => { if (e.target.id === 'edit-kode') autoSelectWilayah(e.target.value, 'edit-wil'); });
+
       // getActiveLoan() — Cari pinjaman SP yang masih aktif (belum lunas) untuk peternak tertentu
       // .find() = cari satu data pertama yang cocok dengan syarat
       // Dipakai di Rekap Pembayaran untuk tahu berapa cicilan SP minggu ini
@@ -4157,7 +4204,7 @@
         const totalBg = bersih < 0 ? 'background:#fff5f5;border:2px solid #dc3545' : 'background:#f0fdf4;border:2px solid #34c759';
         return `
     <div style="text-align:center;margin-bottom:10px">
-      ${logoSrc ? `<img src="${logoSrc}" style="width:56px;height:56px;border-radius:8px;object-fit:contain;margin-bottom:4px" alt="Logo">` : ''}
+      ${logoSrc ? `<img src="${logoSrc}" style="width:72px;height:72px;border-radius:8px;object-fit:contain;margin-bottom:4px" alt="Logo">` : ''}
       <div style="font-size:16px;font-weight:bold;letter-spacing:0.5px">UD ADIL BROTHERS</div>
       <div style="font-size:11px;color:#666;margin-top:2px">BUKTI PEMBAYARAN SUSU</div>
     </div>
@@ -4282,7 +4329,7 @@
         const tabPerLiter = p.tab || 200;
         return `
     <div style="text-align:center;margin-bottom:20px">
-      ${logoSrc ? `<img src="${logoSrc}" style="width:64px;height:64px;border-radius:8px;object-fit:contain;margin-bottom:8px" alt="Logo">` : ''}
+      ${logoSrc ? `<img src="${logoSrc}" style="width:80px;height:80px;border-radius:8px;object-fit:contain;margin-bottom:8px" alt="Logo">` : ''}
       <div style="font-size:18px;font-weight:800;letter-spacing:0.5px">UD ADIL BROTHERS</div>
       <div style="font-size:12px;color:#666;margin-top:2px">BUKTI TABUNGAN PETERNAK</div>
     </div>
