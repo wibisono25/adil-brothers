@@ -3166,10 +3166,16 @@
         const nama = document.getElementById('p-nama').value.trim().toUpperCase();
         const wil = document.getElementById('p-wilayah').value;
         const tab = parseFloat(document.getElementById('p-tab').value) || 200;
-        if (!kode || !nama) { toast('Kode dan nama wajib', 'err'); return; }
+        if (!nama) { toast('Nama wajib diisi', 'err'); return; }
         if (!wil) { toast('Pilih wilayah', 'err'); return; }
-        if (db.peternak.find(p => p.kode === kode)) { toast('Kode sudah ada', 'warn'); return; }
-        db.peternak.push({ kode, nama, wilayah: wil, tab, status: 'aktif' }); sv(); renderP(); renderW();
+        // Jika kode kosong, generate otomatis
+        let finalKode = kode;
+        if (!finalKode) { 
+          autoGenerateCode(wil, 'p-kode');
+          finalKode = document.getElementById('p-kode').value;
+        }
+        if (db.peternak.find(p => p.kode === finalKode)) { toast('Kode sudah ada', 'warn'); return; }
+        db.peternak.push({ kode: finalKode, nama, wilayah: wil, tab, status: 'aktif' }); sv(); renderP(); renderW();
         document.getElementById('p-kode').value = ''; document.getElementById('p-nama').value = '';
         document.getElementById('p-kode').focus();
         toast(nama + ' ditambahkan');
@@ -3204,10 +3210,16 @@
         const wil = document.getElementById('edit-wil').value;
         const tab = parseFloat(document.getElementById('edit-tab').value) || 200;
         const status = document.getElementById('edit-status').value;
-        if (!kode || !nama || !wil) { toast('Semua field wajib', 'err'); return; }
-        if (kode !== orig && db.peternak.find(p => p.kode === kode)) { toast('Kode sudah dipakai', 'err'); return; }
+        if (!nama || !wil) { toast('Nama dan wilayah wajib', 'err'); return; }
+        // Jika kode kosong, generate otomatis
+        let finalKode = kode;
+        if (!finalKode) {
+          autoGenerateCode(wil, 'edit-kode');
+          finalKode = document.getElementById('edit-kode').value;
+        }
+        if (finalKode !== orig && db.peternak.find(p => p.kode === finalKode)) { toast('Kode sudah dipakai', 'err'); return; }
         const idx = db.peternak.findIndex(p => p.kode === orig); if (idx < 0) return;
-        db.peternak[idx] = { kode, nama, wilayah: wil, tab, status };
+        db.peternak[idx] = { kode: finalKode, nama, wilayah: wil, tab, status };
         if (kode !== orig) { db.susu.forEach(s => { if (s.kode === orig) s.kode = kode; }); db.pinjaman.forEach(pin => { if (pin.kode === orig) pin.kode = kode; }); }
         sv(); renderP(); renderW();
         document.getElementById('modal-edit').classList.remove('open');
