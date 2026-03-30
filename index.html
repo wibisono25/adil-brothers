@@ -1950,7 +1950,10 @@
               style="width:100%"></div>
           <div class="f160"><label>Biaya Antar /zak (Rp)</label><input type="number" id="pk-antar" value="2000"
               style="width:100%"></div>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary" id="btn-pk-dist-simpan-top" style="align-self:flex-end">💾 Simpan Semua</button>
         </div>
+        <div class="tip"><b>Tip:</b> Enter = pindah ke peternak berikutnya · Baris hijau = sudah tersimpan</div>
         <div class="tbl-wrap">
           <table>
             <thead>
@@ -1975,7 +1978,7 @@
           </table>
         </div>
         <div style="margin-top:12px;text-align:right">
-          <button class="btn btn-primary" id="btn-pk-dist-simpan">💾 Simpan Distribusi</button>
+          <button class="btn btn-primary" id="btn-pk-dist-simpan-bot">💾 Simpan Distribusi</button>
         </div>
       </div>
 
@@ -2836,6 +2839,8 @@
       // ============================================================
       let db = { wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [], pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [], karyawan: [], hutang_bergulir: {}, rekap_diproses: {}, jadwal_kirim: [] };
       let gridData = {};
+      let distData = {};
+      let lastDistTgl = '';
       let rekRange = { dari: null, sampai: null };
       let slipState = { dari: null, sampai: null, kode: null };
 
@@ -5036,6 +5041,14 @@
       // ── DISTRIBUSI ──
       function buildDistGrid() {
         const tglDist = document.getElementById('pk-dist-tgl').value;
+        if (tglDist !== lastDistTgl) {
+          distData = {};
+          lastDistTgl = tglDist;
+          // Load from DB for this new date
+          const existingDist = tglDist ? db.pakan_dist.filter(d => d.tgl === tglDist) : [];
+          existingDist.forEach(d => { distData[d.kode] = d.zak; });
+        }
+
         const hjual = parseFloat(document.getElementById('pk-hjual').value) || 225000;
         const antar = parseFloat(document.getElementById('pk-antar').value) || 2000;
         const hpp = getHPP();
@@ -5044,30 +5057,52 @@
         const aktif = db.peternak.filter(p => p.status === 'aktif');
         if (!aktif.length) { tb.innerHTML = '<tr><td colspan="6"><div class="empty" style="padding:16px">Belum ada peternak aktif</div></td></tr>'; return; }
 
-        // Load existing dist for this date if any
-        const existingDist = tglDist ? db.pakan_dist.filter(d => d.tgl === tglDist) : [];
-
         tb.innerHTML = '';
         let totZak = 0, totJual = 0, totMargin = 0;
         aktif.forEach(p => {
-          const existing = existingDist.find(d => d.kode === p.kode);
-          const zak = existing ? existing.zak : 0;
+          const zak = distData[p.kode] || 0;
           const nilaiJual = zak * hjual;
           const margin = zak * (hjual - hppTotal);
           totZak += zak; totJual += nilaiJual; totMargin += margin;
+
+          // Cek kalau sudah tersimpan di DB
+          const inDB = db.pakan_dist.find(d => d.tgl === tglDist && d.kode === p.kode);
+          const savedMark = inDB && inDB.zak === zak && zak > 0;
+
           const tr = document.createElement('tr');
           tr.id = `dist-row-${p.kode}`;
+          if (savedMark) tr.classList.add('row-saved');
+
           tr.innerHTML = `<td><b>${p.kode}</b></td><td>${p.nama}</td><td>${p.wilayah}</td><td class="num"></td><td class="num" id="dist-jual-${p.kode}">${nilaiJual > 0 ? 'Rp ' + fmtRp(nilaiJual) : '—'}</td><td class="num" id="dist-margin-${p.kode}" style="color:${margin > 0 ? 'var(--success)' : margin < 0 ? 'var(--danger)' : 'var(--text2)'}">${nilaiJual > 0 ? 'Rp ' + fmtRp(margin) : '—'}</td>`;
-          const inp = document.createElement('input'); inp.type = 'number'; inp.min = '0'; inp.step = '0.5';
-          inp.value = zak || ''; inp.placeholder = '0'; inp.style.cssText = 'width:80px;text-align:right;height:28px;font-size:12px';
-          inp.addEventListener('input', () => updateDistRow(p.kode, parseFloat(inp.value) || 0, hjual, hppTotal));
+          const inp = document.createElement('input'); inp.type = 'number'; inp.min = '0';
+          inp.value = zak || ''; inp.placeholder = '0'; inp.className = 'ginp'; inp.style.cssText = 'width:80px;text-align:right;height:28px;font-size:12px';
+          inp.addEventListener('input', () => {
+            const val = parseInt(inp.value) || 0;
+            distData[p.kode] = val;
+            updateDistRow(p.kode, val, hjual, hppTotal);
+          });
+          inp.addEventListener('keydown', e => onDistKey(e, p.kode));
           inp.dataset.kode = p.kode;
           tr.cells[3].appendChild(inp);
+          tr._inp = inp;
           tb.appendChild(tr);
         });
         document.getElementById('pk-dist-total-zak').textContent = totZak > 0 ? totZak + ' zak' : '—';
         document.getElementById('pk-dist-total-jual').textContent = totJual > 0 ? 'Rp ' + fmtRp(totJual) : '—';
         document.getElementById('pk-dist-total-margin').textContent = totMargin !== 0 ? 'Rp ' + fmtRp(totMargin) : '—';
+      }
+
+      function onDistKey(e, kode) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const aktif = db.peternak.filter(p => p.status === 'aktif');
+          const idx = aktif.findIndex(p => p.kode === kode);
+          if (idx + 1 < aktif.length) {
+            const nextKode = aktif[idx + 1].kode;
+            const nextRow = document.getElementById(`dist-row-${nextKode}`);
+            if (nextRow && nextRow._inp) nextRow._inp.focus();
+          }
+        }
       }
 
       function updateDistRow(kode, zak, hjual, hppTotal) {
@@ -5077,8 +5112,8 @@
         if (eM) { eM.textContent = zak > 0 ? 'Rp ' + fmtRp(margin) : '—'; eM.style.color = margin > 0 ? 'var(--success)' : margin < 0 ? 'var(--danger)' : 'var(--text2)'; }
         // update footer totals
         let totZak = 0, totJual = 0, totMargin = 0;
-        document.querySelectorAll('[data-kode]').forEach(inp => {
-          const z = parseFloat(inp.value) || 0;
+        document.querySelectorAll('#body-pk-dist input[data-kode]').forEach(inp => {
+          const z = parseInt(inp.value) || 0;
           totZak += z; totJual += z * hjual; totMargin += z * (hjual - hppTotal);
         });
         document.getElementById('pk-dist-total-zak').textContent = totZak > 0 ? totZak + ' zak' : '—';
@@ -5090,7 +5125,7 @@
       document.getElementById('pk-hjual').addEventListener('change', buildDistGrid);
       document.getElementById('pk-antar').addEventListener('change', buildDistGrid);
 
-      document.getElementById('btn-pk-dist-simpan').addEventListener('click', () => {
+      function simpanDist() {
         const tgl = document.getElementById('pk-dist-tgl').value;
         const hjual = parseFloat(document.getElementById('pk-hjual').value) || 225000;
         const antar = parseFloat(document.getElementById('pk-antar').value) || 2000;
@@ -5099,15 +5134,31 @@
         let n = 0;
         // Hapus distribusi lama untuk tanggal ini lalu simpan ulang
         db.pakan_dist = db.pakan_dist.filter(d => d.tgl !== tgl);
-        document.querySelectorAll('[data-kode]').forEach(inp => {
-          const zak = parseFloat(inp.value) || 0; if (!zak) return;
-          const kode = inp.dataset.kode;
-          const p = db.peternak.find(x => x.kode === kode); if (!p) return;
-          db.pakan_dist.push({ id: genId(), tgl, kode, nama: p.nama, wilayah: p.wilayah, zak, hjual, antar, hppTotal });
-          n++;
+        db.peternak.filter(p => p.status === 'aktif').forEach(p => {
+          const zak = distData[p.kode] || 0;
+          if (zak > 0) {
+            db.pakan_dist.push({ id: genId(), tgl, kode: p.kode, nama: p.nama, wilayah: p.wilayah, zak, hjual, antar, hppTotal });
+            const tr = document.getElementById(`dist-row-${p.kode}`);
+            if (tr) tr.classList.add('row-saved');
+            n++;
+          } else {
+            const tr = document.getElementById(`dist-row-${p.kode}`);
+            if (tr) tr.classList.remove('row-saved');
+          }
         });
-        sv(); renderPakan(); toast(`Distribusi ${n} peternak (${fmtTgl(tgl)}) tersimpan`, 'ok');
-      });
+        sv(); renderPakan();
+        // Feedback tombol
+        [document.getElementById('btn-pk-dist-simpan-top'), document.getElementById('btn-pk-dist-simpan-bot')].forEach(btn => {
+          if (!btn) return;
+          const orig = btn.textContent;
+          btn.textContent = `✓ ${n} tersimpan`; btn.classList.add('btn-ok');
+          setTimeout(() => { btn.textContent = orig; btn.classList.remove('btn-ok'); }, 2500);
+        });
+        toast(`Distribusi ${n} peternak (${fmtTgl(tgl)}) tersimpan`, 'ok');
+      }
+
+      document.getElementById('btn-pk-dist-simpan-top').addEventListener('click', simpanDist);
+      document.getElementById('btn-pk-dist-simpan-bot').addEventListener('click', simpanDist);
 
       document.getElementById('pk-dist-filter-bulan').addEventListener('change', renderPakanDist);
       document.getElementById('pk-dist-cari').addEventListener('input', renderPakanDist);
