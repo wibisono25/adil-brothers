@@ -2868,6 +2868,44 @@
         }
       }
 
+      // svKeu() = "save Keuangan" — KHUSUS Sinkronisasi Bagian Keuangan Saja (Lebih Cepat)
+      async function svKeu() {
+        // 1. Simpan ke localStorage dulu (cepat, offline)
+        try { localStorage.setItem('glghrm_v2', JSON.stringify(db)); } catch (e) { }
+
+        // 2. Simpan ke Supabase (Khusus Pemasukan & Pengeluaran)
+        const indicator = document.getElementById('sync-indicator');
+        if (indicator) indicator.style.display = 'flex';
+
+        try {
+          const inData = db.keuangan.filter(k => k.tipe === 'in');
+          const outData = db.keuangan.filter(k => k.tipe === 'out');
+
+          // Pastikan semua data memiliki ID (untuk data lama)
+          inData.forEach(k => { if (!k.id) k.id = genId(); });
+          outData.forEach(k => { if (!k.id) k.id = genId(); });
+
+          const results = await Promise.all([
+            sb.from('pemasukan').upsert(inData.map(k => ({
+              id: k.id, tgl: k.tgl, kategori: k.kat, keterangan: k.ket, volume: k.liter, harga: k.harga, nominal: k.nominal
+            }))),
+            sb.from('pengeluaran').upsert(outData.map(k => ({
+              id: k.id, tgl: k.tgl, kategori: k.kat, keterangan: k.ket, nominal: k.nominal
+            })))
+          ]);
+
+          const firstError = results.find(r => r.error);
+          if (firstError) throw new Error(firstError.error.message);
+
+          showSyncStatus('✅ Keuangan Tersinkron', 'ok');
+        } catch (e) {
+          console.error('Finance sync error:', e);
+          showSyncStatus('❌ Sinkron Keuangan Gagal', 'err');
+        } finally {
+          if (indicator) indicator.style.display = 'none';
+        }
+      }
+
       // pushToSupabase() — Helper untuk mengunggah semua tabel ke Supabase
       async function pushToSupabase() {
         const promises = [];
@@ -2912,11 +2950,21 @@
           }))));
         }
 
-        // Keuangan
+        // Keuangan (Split ke tabel pemasukan & pengeluaran)
         if (db.keuangan && db.keuangan.length) {
-          promises.push(sb.from('keuangan').upsert(db.keuangan.map(k => ({
-            id: k.id, tgl: k.tgl, tipe: k.tipe, kategori: k.kat, keterangan: k.ket, volume: k.liter, nominal: k.nominal
-          }))));
+          const inData = db.keuangan.filter(k => k.tipe === 'in');
+          const outData = db.keuangan.filter(k => k.tipe === 'out');
+          
+          if (inData.length) {
+            promises.push(sb.from('pemasukan').upsert(inData.map(k => ({
+              id: k.id || genId(), tgl: k.tgl, kategori: k.kat, keterangan: k.ket, volume: k.liter, harga: k.harga, nominal: k.nominal
+            }))));
+          }
+          if (outData.length) {
+            promises.push(sb.from('pengeluaran').upsert(outData.map(k => ({
+              id: k.id || genId(), tgl: k.tgl, kategori: k.kat, keterangan: k.ket, nominal: k.nominal
+            }))));
+          }
         }
 
         // Karyawan
@@ -2992,7 +3040,8 @@
             sb.from('susu').select('*'),
             sb.from('pinjaman').select('*'),
             sb.from('beras').select('*'),
-            sb.from('keuangan').select('*'),
+            sb.from('pemasukan').select('*'),
+            sb.from('pengeluaran').select('*'),
             sb.from('karyawan').select('*'),
             sb.from('pakan_masuk').select('*'),
             sb.from('pakan_dist').select('*'),
@@ -3005,7 +3054,7 @@
           const res = results;
 
           // Rekonstruksi DB
-          const [conf, wil, pet, sus, pin, ber, keu, kar, pkm, pkd, jdk] = res.map(r => r.data);
+          const [conf, wil, pet, sus, pin, ber, pem, pen, kar, pkm, pkd, jdk] = res.map(r => r.data);
 
           // Mapping App Config
           const configMap = {};
@@ -3031,9 +3080,11 @@
             id: b.id, kode: b.peternak_kode, tgl: b.tgl, nominal: b.nominal, cicilan: b.cicilan,
             sisa: b.sisa, riwayatCicilan: b.riwayat_cicilan, ket: b.ket, lunas: b.lunas, tglLunas: b.tgl_lunas
           }));
-          db.keuangan = (keu || []).map(k => ({
-            id: k.id, tgl: k.tgl, tipe: k.tipe, kat: k.kategori, ket: k.keterangan, liter: k.volume, nominal: k.nominal
-          }));
+          
+          db.keuangan = [
+            ...(pem || []).map(k => ({ id: k.id, tgl: k.tgl, tipe: 'in', kat: k.kategori, ket: k.keterangan, liter: k.volume, harga: k.harga, nominal: k.nominal })),
+            ...(pen || []).map(k => ({ id: k.id, tgl: k.tgl, tipe: 'out', kat: k.kategori, ket: k.keterangan, nominal: k.nominal }))
+          ].sort((a, b) => b.tgl.localeCompare(a.tgl));
           db.karyawan = (kar || []).map(k => ({
             id: k.id, nama: k.nama, jabatan: k.jabatan, gaji: k.gaji, tunjangan: k.tunjangan, aktif: k.aktif
           }));
@@ -3080,7 +3131,7 @@
           localStorage.removeItem('glghrm_v2');
 
           // 3. Bersihkan Cloud (Supabase) — Hapus semua baris di tabel utama
-          const tables = ['susu', 'pinjaman', 'beras', 'keuangan', 'pakan_dist', 'pakan_masuk', 'peternak', 'wilayah', 'jadwal_kirim', 'app_config', 'karyawan'];
+          const tables = ['susu', 'pinjaman', 'beras', 'pemasukan', 'pengeluaran', 'pakan_dist', 'pakan_masuk', 'peternak', 'wilayah', 'jadwal_kirim', 'app_config', 'karyawan'];
           const delPromises = tables.map(t => {
             // Kita coba hapus semua baris. Karena tiap tabel punya primary key berbeda, 
             // cara paling umum di Supabase JS adalah filter yang selalu true.
@@ -5132,7 +5183,7 @@
       document.getElementById('keu-in-liter').addEventListener('input', autoNominal);
       document.getElementById('keu-in-sumber').addEventListener('change', autoNominal);
       document.getElementById('keu-in-harga').addEventListener('input', autoNominal);
-      document.getElementById('btn-keu-in').addEventListener('click', () => { const tgl = document.getElementById('keu-in-tgl').value; const sumber = document.getElementById('keu-in-sumber').value; const liter = parseFloat(document.getElementById('keu-in-liter').value) || 0; const harga = parseFloat(document.getElementById('keu-in-harga').value) || 0; const nominal = parseFloat(document.getElementById('keu-in-nominal').value) || 0; const ket = document.getElementById('keu-in-ket').value.trim(); if (!tgl) { toast('Pilih tanggal', 'err'); return; } if (nominal <= 0) { toast('Nominal harus lebih dari 0', 'err'); return; } db.keuangan.push({ id: genId(), tgl, tipe: 'in', kat: sumber, ket, liter: liter || null, harga: harga || null, nominal }); sv(); refreshKeuSelects(); renderKeuangan(); document.getElementById('keu-in-liter').value = ''; document.getElementById('keu-in-nominal').value = ''; document.getElementById('keu-in-ket').value = ''; toast('Pemasukan Rp ' + fmtRp(nominal) + ' dicatat', 'ok'); });
+      document.getElementById('btn-keu-in').addEventListener('click', () => { const tgl = document.getElementById('keu-in-tgl').value; const sumber = document.getElementById('keu-in-sumber').value; const liter = parseFloat(document.getElementById('keu-in-liter').value) || 0; const harga = parseFloat(document.getElementById('keu-in-harga').value) || 0; const nominal = parseFloat(document.getElementById('keu-in-nominal').value) || 0; const ket = document.getElementById('keu-in-ket').value.trim(); if (!tgl) { toast('Pilih tanggal', 'err'); return; } if (nominal <= 0) { toast('Nominal harus lebih dari 0', 'err'); return; } db.keuangan.push({ id: genId(), tgl, tipe: 'in', kat: sumber, ket, liter: liter || null, harga: harga || null, nominal }); svKeu(); refreshKeuSelects(); renderKeuangan(); document.getElementById('keu-in-liter').value = ''; document.getElementById('keu-in-nominal').value = ''; document.getElementById('keu-in-ket').value = ''; toast('Pemasukan Rp ' + fmtRp(nominal) + ' dicatat', 'ok'); });
       // ── KATEGORI KUSTOM PENGELUARAN ──
       function loadKatKustom() {
         const saved = JSON.parse(localStorage.getItem('glghrm_kat_kustom') || '[]');
@@ -5189,14 +5240,14 @@
         if (!tgl) { toast('Pilih tanggal', 'err'); return; }
         if (nominal <= 0) { toast('Nominal harus lebih dari 0', 'err'); return; }
         db.keuangan.push({ id: genId(), tgl, tipe: 'out', kat, ket, nominal });
-        sv(); refreshKeuSelects(); renderKeuangan();
+        svKeu(); refreshKeuSelects(); renderKeuangan();
         document.getElementById('keu-out-nominal').value = '';
         document.getElementById('keu-out-ket').value = '';
         toast('Pengeluaran Rp ' + fmtRp(nominal) + ' dicatat', 'ok');
       });
       function updateGajiPreview() { const bln = document.getElementById('keu-gaji-bln').value; const aktif = (db.karyawan || []).filter(k => k.aktif); const tG = aktif.reduce((a, k) => a + k.gaji, 0); const tT = aktif.reduce((a, k) => a + k.tunjangan, 0); const sudah = bln ? db.keuangan.some(k => k.tipe === 'out' && k.kat === 'Gaji Karyawan' && k.tgl.startsWith(bln)) : false; const el = document.getElementById('keu-gaji-preview'); if (!el) return; el.innerHTML = aktif.length + ' karyawan · Gaji: <b>Rp ' + fmtRp(tG) + '</b> · Tunjangan: <b>Rp ' + fmtRp(tT) + '</b>' + (sudah ? '<br><span style="color:var(--warning)">⚠️ Sudah dicatat bulan ini</span>' : ''); }
       document.getElementById('keu-gaji-bln').addEventListener('change', updateGajiPreview);
-      document.getElementById('btn-keu-gaji').addEventListener('click', () => { const bln = document.getElementById('keu-gaji-bln').value; if (!bln) { toast('Pilih bulan', 'err'); return; } if (!db.karyawan || !db.karyawan.length) { toast('Tidak ada data karyawan', 'err'); return; } const aktif = db.karyawan.filter(k => k.aktif); const sudah = db.keuangan.some(k => k.tipe === 'out' && k.kat === 'Gaji Karyawan' && k.tgl.startsWith(bln)); if (sudah && !confirm('Gaji bulan ini sudah dicatat. Catat lagi?')) return; const tgl = bln + '-01'; const tG = aktif.reduce((a, k) => a + k.gaji, 0); const tT = aktif.reduce((a, k) => a + k.tunjangan, 0); if (tG > 0) db.keuangan.push({ id: genId(), tgl, tipe: 'out', kat: 'Gaji Karyawan', ket: 'Gaji ' + aktif.length + ' karyawan', nominal: tG }); if (tT > 0) db.keuangan.push({ id: genId(), tgl, tipe: 'out', kat: 'Tunjangan Operasional', ket: 'Tunjangan ' + aktif.length + ' karyawan', nominal: tT }); sv(); refreshKeuSelects(); renderKeuangan(); updateGajiPreview(); toast('Gaji + tunjangan Rp ' + fmtRp(tG + tT) + ' dicatat', 'ok'); });
+      document.getElementById('btn-keu-gaji').addEventListener('click', () => { const bln = document.getElementById('keu-gaji-bln').value; if (!bln) { toast('Pilih bulan', 'err'); return; } if (!db.karyawan || !db.karyawan.length) { toast('Tidak ada data karyawan', 'err'); return; } const aktif = db.karyawan.filter(k => k.aktif); const sudah = db.keuangan.some(k => k.tipe === 'out' && k.kat === 'Gaji Karyawan' && k.tgl.startsWith(bln)); if (sudah && !confirm('Gaji bulan ini sudah dicatat. Catat lagi?')) return; const tgl = bln + '-01'; const tG = aktif.reduce((a, k) => a + k.gaji, 0); const tT = aktif.reduce((a, k) => a + k.tunjangan, 0); if (tG > 0) db.keuangan.push({ id: genId(), tgl, tipe: 'out', kat: 'Gaji Karyawan', ket: 'Gaji ' + aktif.length + ' karyawan', nominal: tG }); if (tT > 0) db.keuangan.push({ id: genId(), tgl, tipe: 'out', kat: 'Tunjangan Operasional', ket: 'Tunjangan ' + aktif.length + ' karyawan', nominal: tT }); svKeu(); refreshKeuSelects(); renderKeuangan(); updateGajiPreview(); toast('Gaji + tunjangan Rp ' + fmtRp(tG + tT) + ' dicatat', 'ok'); });
 
       // ═══════════════════════════════════
       // MANAJEMEN KARYAWAN (CRUD)
@@ -5795,7 +5846,7 @@
         if (!tgl) { toast('Pilih tanggal dulu', 'err'); return; }
         if (nominal <= 0) { toast('Isi nominal dulu', 'err'); return; }
         db.keuangan.push({ id: genId(), tgl, tipe: 'in', kat: 'Lokal Eceran', ket: ket || (liter > 0 ? liter.toFixed(1) + ' L' : ''), liter: liter || null, harga: harga || null, nominal });
-        sv();
+        svKeu();
         document.getElementById('m-jual-liter').value = '';
         document.getElementById('m-jual-nominal').value = '';
         document.getElementById('m-jual-ket').value = '';
@@ -5830,7 +5881,7 @@
         if (!tgl) { toast('Pilih tanggal dulu', 'err'); return; }
         if (nominal <= 0) { toast('Isi nominal dulu', 'err'); return; }
         db.keuangan.push({ id: genId(), tgl, tipe: 'out', kat, ket, nominal });
-        sv();
+        svKeu();
         document.getElementById('m-out-nominal').value = '';
         document.getElementById('m-out-ket').value = '';
         renderMOutRiwayat();
