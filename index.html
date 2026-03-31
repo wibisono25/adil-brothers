@@ -2308,6 +2308,7 @@
                 <th class="num">Beras</th>
                 <th class="num">Mineral</th>
                 <th class="num">Lain-lain</th>
+                <th class="num">Selisih</th>
                 <th class="num">Pakan</th>
                 <th class="num">Tabungan</th>
                 <th class="num">Hutang Lalu</th>
@@ -3201,7 +3202,7 @@
       function exportData() {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' }));
-        a.download = `glagaharum_${dts(new Date())}.json`; a.click(); toast('Data berhasil diekspor!');
+        a.download = `udadilbrothers_${dts(new Date())}.json`; a.click(); toast('Data berhasil diekspor!');
       }
       // importData() — Baca file .json dari komputer dan muat ke aplikasi
       // FileReader adalah API browser untuk membaca file yang diupload pengguna
@@ -4130,14 +4131,14 @@
 
         const data = db.susu.filter(s => s.tgl >= dari && s.tgl <= sampai);
         tb.innerHTML = ''; tbPot.innerHTML = ''; tbHutang.innerHTML = '';
-        let tL = 0, tB = 0, tSP = 0, tBer = 0, tMin = 0, tLain = 0, tPak = 0, tTab = 0, tHB = 0, tN = 0, n = 0, adaMinus = false;
+        let tL = 0, tB = 0, tSP = 0, tBer = 0, tMin = 0, tLain = 0, tSelisih = 0, tPak = 0, tTab = 0, tHB = 0, tN = 0, n = 0, adaMinus = false;
 
         db.peternak.filter(p => p.status === 'aktif').forEach((p) => {
           const r = hitungRekap(p, data, dari, sampai, harga, hpakan);
           const pot = getPot(dari, sampai, p.kode);
           const berasEntry = getActiveBeras(p.kode);
 
-          if (r.liter > 0) { n++; tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tPak += r.pF; tTab += r.tabF; tHB += r.hutangBayar; tN += r.bersih; }
+          if (r.liter > 0) { n++; tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangBayar; tN += r.bersih; }
           if (r.bersih < 0 || r.hutangGulung > 0) adaMinus = true;
 
           // REKAP ROW
@@ -4156,6 +4157,7 @@
             '<td class="num">' + (r.berasF > 0 ? '<span style="color:var(--accent2)">' + fmtRp(r.berasF) + '</span>' : '—') + '</td>' +
             '<td class="num">' + (r.mF > 0 ? fmtRp(r.mF) : '—') + '</td>' +
             '<td class="num">' + (r.lF > 0 ? fmtRp(r.lF) : '—') + '</td>' +
+            '<td class="num">' + (r.potSelisih > 0 ? '<span style="color:var(--danger)">' + fmtRp(r.potSelisih) + '</span>' : r.potSelisih < 0 ? '<span style="color:var(--success)">-' + fmtRp(Math.abs(r.potSelisih)) + '</span>' : '—') + '</td>' +
             '<td class="num">' + (r.pF > 0 ? fmtRp(r.pF) : '—') + '</td>' +
             '<td class="num">' + (r.tabF > 0 ? fmtRp(r.tabF) : '—') + '</td>' +
             '<td class="num">' + (r.hutangLalu > 0 ? '<span style="color:var(--danger);font-weight:600">' + fmtRp(r.hutangLalu) + '</span>' : '—') + '</td>' +
@@ -4171,20 +4173,27 @@
           trP.innerHTML =
             '<td><b>' + p.kode + '</b></td><td>' + p.nama + '</td>' +
             '<td class="num" style="color:var(--accent2);font-size:12px">' + (berasEntry ? 'Rp ' + fmtRp(r.berasF) + ' (auto)' : '—') + '</td>' +
-            '<td class="num"></td><td class="num"></td><td></td><td class="num"></td><td class="num"></td>';
+            '<td class="num"></td><td class="num"></td><td class="num"></td><td></td><td class="num"></td><td class="num"></td>';
           const inpMin = document.createElement('input'); inpMin.type = 'number'; inpMin.min = '0'; inpMin.value = pot.mineral || ''; inpMin.placeholder = '0'; inpMin.style.cssText = 'width:100px;text-align:right;height:28px;font-size:12px';
           inpMin.addEventListener('change', () => setPot(dari, sampai, p.kode, 'mineral', parseFloat(inpMin.value) || 0));
           trP.cells[3].appendChild(inpMin);
-          const inpLain = document.createElement('input'); inpLain.type = 'number'; inpLain.min = '0'; inpLain.value = pot.lainlain || ''; inpLain.placeholder = '0'; inpLain.style.cssText = 'width:100px;text-align:right;height:28px;font-size:12px';
+          const inpLain = document.createElement('input'); inpLain.type = 'number'; inpLain.min = '0'; inpLain.value = pot.lainlain || ''; inpLain.placeholder = '0'; inpLain.style.cssText = 'width:80px;text-align:right;height:28px;font-size:12px';
           inpLain.addEventListener('change', () => setPot(dari, sampai, p.kode, 'lainlain', parseFloat(inpLain.value) || 0));
           trP.cells[4].appendChild(inpLain);
+
           const inpKet = document.createElement('input'); inpKet.type = 'text'; inpKet.value = pot.lainlainKet || ''; inpKet.placeholder = 'keterangan...'; inpKet.style.cssText = 'font-size:12px;height:28px';
           inpKet.addEventListener('change', () => setPot(dari, sampai, p.kode, 'lainlainKet', inpKet.value));
           trP.cells[5].appendChild(inpKet);
-          const inpSelisih = document.createElement('input'); inpSelisih.type = 'number'; inpSelisih.value = pot.selisih || ''; inpSelisih.placeholder = '+/- 0'; inpSelisih.style.cssText = 'width:100px;text-align:right;height:28px;font-size:12px';
-          inpSelisih.title = "(+)Kurang, (-)Lebih";
-          inpSelisih.addEventListener('change', () => setPot(dari, sampai, p.kode, 'selisih', parseFloat(inpSelisih.value) || 0));
+
+          const inpSelisih = document.createElement('input'); inpSelisih.type = 'number'; inpSelisih.value = pot.selisih || ''; inpSelisih.placeholder = '+/- 0'; inpSelisih.style.cssText = 'width:80px;text-align:right;height:28px;font-size:12px';
+          inpSelisih.title = "(+)Kurang bayar, (-)Lebih bayar";
+          inpSelisih.addEventListener('change', () => {
+             setPot(dari, sampai, p.kode, 'selisih', parseFloat(inpSelisih.value) || 0);
+             const btn = document.getElementById('btn-proses-rekap');
+             if (btn) { btn.classList.add('pulse'); setTimeout(() => btn.classList.remove('pulse'), 500); }
+          });
           trP.cells[6].appendChild(inpSelisih);
+          
           // Kolom Pakan — read-only, diisi dari Auto-Isi Pakan (data distribusi)
           const pakanRpVal = (pot.pakanRp && pot.pakanRp > 0) ? pot.pakanRp : (parseFloat(pot.pakan) || 0) * hpakan;
           const tdPakan = trP.cells[7];
@@ -4226,6 +4235,7 @@
           '<div class="rek-sum-item"><div class="rek-sum-label">Beras</div><div class="rek-sum-val">Rp ' + fmtRp(tBer) + '</div></div>' +
           '<div class="rek-sum-item"><div class="rek-sum-label">Mineral</div><div class="rek-sum-val">Rp ' + fmtRp(tMin) + '</div></div>' +
           '<div class="rek-sum-item"><div class="rek-sum-label">Lain-lain</div><div class="rek-sum-val">Rp ' + fmtRp(tLain) + '</div></div>' +
+          '<div class="rek-sum-item"><div class="rek-sum-label">Selisih</div><div class="rek-sum-val">Rp ' + fmtRp(tSelisih) + '</div></div>' +
           '<div class="rek-sum-item"><div class="rek-sum-label">Pakan</div><div class="rek-sum-val">Rp ' + fmtRp(tPak) + '</div></div>' +
           '<div class="rek-sum-item"><div class="rek-sum-label">Tabungan</div><div class="rek-sum-val">Rp ' + fmtRp(tTab) + '</div></div>' +
           '<div class="rek-sum-item"><div class="rek-sum-label">Hutang Lalu</div><div class="rek-sum-val">Rp ' + fmtRp(tHB) + '</div></div>' +
@@ -4281,10 +4291,10 @@
         const harga = parseFloat(document.getElementById('rek-harga').value) || 7300;
         const hpakan = parseFloat(document.getElementById('rek-hpakan').value) || 225000;
         const data = db.susu.filter(s => s.tgl >= dari && s.tgl <= sampai);
-        let csv = 'No,Kode,Nama,Wilayah,Susu(L),Bruto,CicilanSP,Beras,Mineral,LainLain,Pakan,Tabungan,HutangLalu,Dibayar,HutangGulung\n'; let n = 0;
+        let csv = 'No,Kode,Nama,Wilayah,Susu(L),Bruto,CicilanSP,Beras,Mineral,LainLain,Selisih,Pakan,Tabungan,HutangLalu,Dibayar,HutangGulung\n'; let n = 0;
         db.peternak.filter(p => p.status === 'aktif').forEach(p => {
           const r = hitungRekap(p, data, dari, sampai, harga, hpakan); if (!r.liter) return; n++;
-          csv += n + ',"' + p.kode + '","' + p.nama + '","' + p.wilayah + '",' + r.liter.toFixed(1) + ',' + r.bruto + ',' + r.spF + ',' + r.berasF + ',' + r.mF + ',' + r.lF + ',' + r.pF + ',' + r.tabF + ',' + r.hutangLalu + ',' + r.bersih + ',' + r.hutangGulung + '\n';
+          csv += n + ',"' + p.kode + '","' + p.nama + '","' + p.wilayah + '",' + r.liter.toFixed(1) + ',' + r.bruto + ',' + r.spF + ',' + r.berasF + ',' + r.mF + ',' + r.lF + ',' + r.potSelisih + ',' + r.pF + ',' + r.tabF + ',' + r.hutangLalu + ',' + r.bersih + ',' + r.hutangGulung + '\n';
         });
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'rekap_' + dari + '_' + sampai + '.csv'; a.click(); toast('CSV diekspor', 'ok');
       });
@@ -4300,7 +4310,7 @@
         toast('Sedang membuat laporan...', 'info');
 
         let rows = '';
-        let tL = 0, tB = 0, tSP = 0, tBer = 0, tMin = 0, tLain = 0, tPak = 0, tTab = 0, tHB = 0, tN = 0, tHG = 0, n = 0;
+        let tL = 0, tB = 0, tSP = 0, tBer = 0, tMin = 0, tLain = 0, tSelisih = 0, tPak = 0, tTab = 0, tHB = 0, tN = 0, tHG = 0, n = 0;
 
         // Urutkan peternak secara natural (GL1, GL2, GL11...)
         const activePeternak = db.peternak.filter(p => p.status === 'aktif')
@@ -4310,7 +4320,7 @@
           const r = hitungRekap(p, data, dari, sampai, harga, hpakan);
           if (!r.liter) return;
           n++;
-          tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += r.bersih; tHG += r.hutangGulung;
+          tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += r.bersih; tHG += r.hutangGulung;
 
           rows += `
             <tr>
@@ -4324,6 +4334,7 @@
               <td class="num">${r.berasF > 0 ? fmtRp(r.berasF) : '-'}</td>
               <td class="num">${r.mF > 0 ? fmtRp(r.mF) : '-'}</td>
               <td class="num">${r.lF > 0 ? fmtRp(r.lF) : '-'}</td>
+              <td class="num">${r.potSelisih !== 0 ? fmtRp(r.potSelisih) : '-'}</td>
               <td class="num">${r.pF > 0 ? fmtRp(r.pF) : '-'}</td>
               <td class="num">${r.tabF > 0 ? fmtRp(r.tabF) : '-'}</td>
               <td class="num" style="color:${r.hutangLalu > 0 ? '#dc3545' : '#888'}">${r.hutangLalu > 0 ? fmtRp(r.hutangLalu) : '-'}</td>
@@ -4439,11 +4450,11 @@
         });
         const w = window.open('', '_blank');
         w.document.write('<html><head><title>Rekap Pembayaran</title><style>body{font-family:Arial,sans-serif;font-size:9px;margin:10px}h2{margin:0 0 2px;font-size:12px}.sub{color:#666;font-size:9px;margin-bottom:8px}table{width:100%;border-collapse:collapse}th{background:#007aff;color:#fff;padding:4px 6px;text-align:left;font-size:9px}td{padding:3px 6px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#f9f9f9}.foot td{background:#e8f3ff!important;font-weight:bold;border-top:2px solid #007aff}@media print{body{margin:0}}</style></head><body>' +
-          '<h2>Rekap Pembayaran — Glagaharum</h2>' +
+          '<h2>Rekap Pembayaran — UD ADIL BROTHERS</h2>' +
           '<div class="sub">Periode: ' + fmtTgl(dari) + ' – ' + fmtTgl(sampai) + ' | Harga: Rp ' + fmtRp(harga) + '/L | Dicetak: ' + fmtTgl(dts(new Date())) + '</div>' +
-          '<table><thead><tr><th>No</th><th>Kode</th><th>Nama</th><th>Wilayah</th><th>Susu(L)</th><th>Bruto</th><th>SP</th><th>Beras</th><th>Mineral</th><th>Lain</th><th>Pakan</th><th>Tabungan</th><th>Hutang Lalu</th><th>Dibayar</th><th>Hutang Gulung</th></tr></thead>' +
+          '<table><thead><tr><th>No</th><th>Kode</th><th>Nama</th><th>Wilayah</th><th>Susu(L)</th><th>Bruto</th><th>SP</th><th>Beras</th><th>Mineral</th><th>Lain</th><th>Selisih</th><th>Pakan</th><th>Tabungan</th><th>Hutang Lalu</th><th>Dibayar</th><th>Hutang Gulung</th></tr></thead>' +
           '<tbody>' + rows + '</tbody>' +
-          '<tfoot><tr class="foot"><td colspan="4">TOTAL</td><td align="right">' + tL.toFixed(1) + '</td><td align="right">' + fmtRp(tB) + '</td><td align="right">' + fmtRp(tSP) + '</td><td align="right">' + fmtRp(tBer) + '</td><td align="right">' + fmtRp(tMin) + '</td><td align="right">' + fmtRp(tLain) + '</td><td align="right">' + fmtRp(tPak) + '</td><td align="right">' + fmtRp(tTab) + '</td><td align="right">' + fmtRp(tHB) + '</td><td align="right">' + fmtRp(tN) + '</td><td></td></tr></tfoot>' +
+          '<tfoot><tr class="foot"><td colspan="4">TOTAL</td><td align="right">' + tL.toFixed(1) + '</td><td align="right">' + fmtRp(tB) + '</td><td align="right">' + fmtRp(tSP) + '</td><td align="right">' + fmtRp(tBer) + '</td><td align="right">' + fmtRp(tMin) + '</td><td align="right">' + fmtRp(tLain) + '</td><td align="right">' + fmtRp(tSelisih) + '</td><td align="right">' + fmtRp(tPak) + '</td><td align="right">' + fmtRp(tTab) + '</td><td align="right">' + fmtRp(tHB) + '</td><td align="right">' + fmtRp(tN) + '</td><td></td></tr></tfoot>' +
           '</table></body></html>');
         w.document.close(); w.print();
       });
