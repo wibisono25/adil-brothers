@@ -5160,18 +5160,46 @@
         if (!tgl) { toast('Pilih tanggal distribusi', 'err'); return; }
         const hpp = getHPP(); const hppTotal = hpp.hbeli + hpp.bongkar + antar;
         let n = 0;
-        // Hapus distribusi lama untuk tanggal ini lalu simpan ulang
+        
+        // Simpan referensi data lama untuk me-reuse ID agar tidak menjadi duplikat saat sinkron Supabase
+        const oldData = db.pakan_dist.filter(d => d.tgl === tgl);
+        
+        // Keluarkan data lama dari db lokal, karena kita akan inject yang baru
         db.pakan_dist = db.pakan_dist.filter(d => d.tgl !== tgl);
+        
         db.peternak.filter(p => p.status === 'aktif').forEach(p => {
           const zak = distData[p.kode] || 0;
-          if (zak > 0) {
-            db.pakan_dist.push({ id: genId(), tgl, kode: p.kode, nama: p.nama, wilayah: p.wilayah, zak, hjual, antar, hppTotal });
-            const tr = document.getElementById(`dist-row-${p.kode}`);
-            if (tr) tr.classList.add('row-saved');
-            n++;
+          const pOlds = oldData.filter(d => d.kode === p.kode);
+
+          if (pOlds.length > 0) {
+            const mainId = pOlds[0].id;
+            
+            if (zak > 0) {
+              db.pakan_dist.push({ id: mainId, tgl, kode: p.kode, nama: p.nama, wilayah: p.wilayah, zak, hjual, antar, hppTotal });
+              const tr = document.getElementById(`dist-row-${p.kode}`);
+              if (tr) tr.classList.add('row-saved');
+              n++;
+            } else {
+              db.pakan_dist.push({ id: mainId, tgl, kode: p.kode, nama: p.nama, wilayah: p.wilayah, zak: 0, hjual, antar, hppTotal });
+              const tr = document.getElementById(`dist-row-${p.kode}`);
+              if (tr) tr.classList.remove('row-saved');
+            }
+            
+            // Sisa kembaran kita mask jadi 0 agar ikut hilang dari pandangan & Supabase
+            for (let i = 1; i < pOlds.length; i++) {
+              db.pakan_dist.push({ id: pOlds[i].id, tgl, kode: p.kode, nama: p.nama, wilayah: p.wilayah, zak: 0, hjual, antar, hppTotal });
+            }
           } else {
-            const tr = document.getElementById(`dist-row-${p.kode}`);
-            if (tr) tr.classList.remove('row-saved');
+            // Jika dulunya = tidak ada
+            if (zak > 0) {
+              db.pakan_dist.push({ id: genId(), tgl, kode: p.kode, nama: p.nama, wilayah: p.wilayah, zak, hjual, antar, hppTotal });
+              const tr = document.getElementById(`dist-row-${p.kode}`);
+              if (tr) tr.classList.add('row-saved');
+              n++;
+            } else {
+              const tr = document.getElementById(`dist-row-${p.kode}`);
+              if (tr) tr.classList.remove('row-saved');
+            }
           }
         });
         sv(); renderPakan();
@@ -5194,7 +5222,7 @@
       function renderPakanDist() {
         const bln = document.getElementById('pk-dist-filter-bulan').value;
         const cari = document.getElementById('pk-dist-cari').value.toLowerCase();
-        let data = db.pakan_dist.filter(d => (!bln || d.tgl.startsWith(bln)) && (!cari || d.nama?.toLowerCase().includes(cari) || d.kode?.toLowerCase().includes(cari)));
+        let data = db.pakan_dist.filter(d => d.zak > 0 && (!bln || d.tgl.startsWith(bln)) && (!cari || d.nama?.toLowerCase().includes(cari) || d.kode?.toLowerCase().includes(cari)));
         data.sort((a, b) => b.tgl.localeCompare(a.tgl) || a.kode.localeCompare(b.kode));
         const tb = document.getElementById('body-pk-dist-rw');
         if (!data.length) { tb.innerHTML = '<tr><td colspan="10"><div class="empty" style="padding:20px"><div class="empty-icon" style="font-size:24px">🚚</div>Belum ada data distribusi</div></td></tr>'; return; }
@@ -5204,7 +5232,7 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `<td>${fmtTgl(d.tgl)}</td><td><b>${d.kode}</b></td><td>${d.nama}</td><td>${d.wilayah || '—'}</td><td class="num"><b>${d.zak}</b> zak</td><td class="num">Rp ${fmtRp(d.hjual)}</td><td class="num">Rp ${fmtRp(d.zak * d.hjual)}</td><td class="num">Rp ${fmtRp(d.hppTotal)}/zak</td><td class="num" style="color:${margin >= 0 ? 'var(--success)' : 'var(--danger)'}">Rp ${fmtRp(margin)}</td><td></td>`;
           const bH = document.createElement('button'); bH.className = 'btn btn-xs btn-danger'; bH.textContent = 'Hapus';
-          bH.addEventListener('click', () => { if (!confirm('Hapus data distribusi ini?')) return; db.pakan_dist = db.pakan_dist.filter(x => x.id !== d.id); sv(); renderPakan(); toast('Dihapus'); });
+          bH.addEventListener('click', () => { if (!confirm('Hapus data distribusi ini?')) return; const t = db.pakan_dist.find(x => x.id === d.id); if (t) t.zak = 0; sv(); renderPakan(); toast('Dihapus'); });
           tr.cells[9].appendChild(bH); tb.appendChild(tr);
         });
       }
