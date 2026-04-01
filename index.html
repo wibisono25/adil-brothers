@@ -4608,9 +4608,9 @@
         }).join('');
         if (!tableRows) tableRows = '<tr><td colspan="4" style="padding:8px;color:#999;text-align:center;font-style:italic">Tidak ada setoran minggu ini</td></tr>';
         // Rincian potongan
-        const totalPot = spF + bF + mF + lF + pF + tF + hutangBayar + potSelisih;
+        const totalPot = spF + bF + mF + lF + pF + tF + hutangLalu + potSelisih;
         const potItems = [];
-        if (hutangLalu > 0) potItems.push({ nama: `Hutang/Minus (Sisa Rp ${fmtRp(hutangLalu)}) - Dibayar`, jumlah: hutangBayar });
+        if (hutangLalu > 0) potItems.push({ nama: 'Potongan Hutang', jumlah: hutangLalu });
         if (spF > 0) potItems.push({ nama: 'Simpan Pinjam (SP)', jumlah: spF });
         if (bF > 0) potItems.push({ nama: 'Beras', jumlah: bF });
         if (mF > 0) potItems.push({ nama: 'Mineral Sapi', jumlah: mF });
