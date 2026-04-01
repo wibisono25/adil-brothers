@@ -4604,7 +4604,7 @@
           const pagi = (e.pagi || 0).toFixed(1);
           const sore = (e.sore || 0).toFixed(1);
           const tot = ((e.pagi || 0) + (e.sore || 0)).toFixed(1);
-          return `<tr><td style="padding:3px 6px;border-bottom:1px solid #eee">${fmtTglShort(e.tgl)}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right">${pagi}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right">${sore}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right;font-weight:bold">${tot}</td></tr>`;
+          return `<tr><td style="padding:2px 4px;border-bottom:1px solid #eee">${fmtTglShort(e.tgl)}</td><td style="padding:2px 4px;border-bottom:1px solid #eee;text-align:right">${pagi}</td><td style="padding:2px 4px;border-bottom:1px solid #eee;text-align:right">${sore}</td><td style="padding:2px 4px;border-bottom:1px solid #eee;text-align:right;font-weight:bold">${tot}</td></tr>`;
         }).join('');
         if (!tableRows) tableRows = '<tr><td colspan="4" style="padding:8px;color:#999;text-align:center;font-style:italic">Tidak ada setoran minggu ini</td></tr>';
         // Rincian potongan
@@ -4622,74 +4622,80 @@
         if (potSelisih !== 0 && potSelisih !== undefined) {
           potItems.push({ nama: potSelisih > 0 ? 'Kelebihan Bayar Mgg Lalu' : 'Kurang Bayar Mgg Lalu', jumlah: potSelisih });
         }
-        let potTableRows = potItems.map(item => `<tr><td style="padding:3px 6px;border-bottom:1px solid #eee">${item.nama}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:right;color:${item.jumlah < 0 ? '#34c759' : '#dc3545'}">${item.jumlah < 0 ? '+ Rp ' + fmtRp(Math.abs(item.jumlah)) : '- Rp ' + fmtRp(item.jumlah)}</td></tr>`).join('');
+        let potTableRows = potItems.map(item => `<tr><td style="padding:2px 4px;border-bottom:1px solid #eee">${item.nama}</td><td style="padding:2px 4px;border-bottom:1px solid #eee;text-align:right;color:${item.jumlah < 0 ? '#34c759' : '#dc3545'}">${item.jumlah < 0 ? '+ Rp ' + fmtRp(Math.abs(item.jumlah)) : '- Rp ' + fmtRp(item.jumlah)}</td></tr>`).join('');
         if (!potTableRows) potTableRows = '<tr><td colspan="2" style="padding:6px;color:#999;text-align:center;font-style:italic">Tidak ada potongan</td></tr>';
         // Pakan period info
         let pakanInfo = '';
         if (pakanDari && pakanSampai) {
-          pakanInfo = `<div style="margin-top:4px;padding:6px 10px;background:#fff8e1;border-radius:6px;font-size:11px;color:#795548;border:1px solid #ffe0b2">🚚 Potongan pakan dari periode: <b>${fmtTglShort(pakanDari)}</b> s/d <b>${fmtTglShort(pakanSampai)}</b></div>`;
+          pakanInfo = `<div style="margin-top:3px;padding:4px 8px;background:#fff8e1;border-radius:4px;font-size:10px;color:#795548;border:1px solid #ffe0b2">🚚 Pakan dari: <b>${fmtTglShort(pakanDari)}</b> s/d <b>${fmtTglShort(pakanSampai)}</b></div>`;
         }
         // Tabungan info
         const tabPerLiter = p.tab || 200;
-        const tabInfo = tF > 0 ? `<div style="margin-top:4px;padding:6px 10px;background:#e3f2fd;border-radius:6px;font-size:11px;color:#1565c0;border:1px solid #bbdefb">💰 Tabungan: ${liter.toFixed(1)} L × Rp ${fmtRp(tabPerLiter)} = <b>Rp ${fmtRp(tF)}</b></div>` : '';
+        const tabInfo = tF > 0 ? `<div style="margin-top:3px;padding:4px 8px;background:#e3f2fd;border-radius:4px;font-size:10px;color:#1565c0;border:1px solid #bbdefb">💰 Tabungan: ${liter.toFixed(1)} L × Rp ${fmtRp(tabPerLiter)} = <b>Rp ${fmtRp(tF)}</b></div>` : '';
         // Total color
         const totalColor = bersih < 0 ? 'color:#dc3545' : 'color:#1c1c1e';
         const totalBg = bersih < 0 ? 'background:#fff5f5;border:2px solid #dc3545' : 'background:#f0fdf4;border:2px solid #34c759';
         return `
-    <div style="text-align:center;margin-bottom:6px">
-      ${logoSrc ? `<img src="${logoSrc}" style="width:100px;height:100px;border-radius:8px;object-fit:contain;margin-bottom:2px" alt="Logo">` : ''}
+    <div class="slip-content">
+    <div style="text-align:center;margin-bottom:4px">
+      ${logoSrc ? `<img src="${logoSrc}" style="width:60px;height:60px;border-radius:6px;object-fit:contain;margin-bottom:2px" alt="Logo">` : ''}
       <div style="font-size:13px;font-weight:bold;letter-spacing:0.3px">UD ADIL BROTHERS</div>
-      <div style="font-size:9px;color:#666;margin-top:1px">BUKTI PEMBAYARAN SUSU</div>
+      <div style="font-size:8px;color:#666;margin-top:1px">BUKTI PEMBAYARAN SUSU</div>
     </div>
-    <hr style="border:none;border-top:2px solid #222;margin:4px 0">
+    <hr style="border:none;border-top:2px solid #222;margin:3px 0">
     <div style="display:flex;justify-content:space-between;padding:2px 0">
-      <div><span style="color:#888;font-size:10px">Nama</span><br><b style="font-size:12px">${p.nama}</b></div>
-      <div style="text-align:right"><span style="color:#888;font-size:10px">Kode Peternak</span><br><b style="font-size:12px">${p.kode}</b></div>
+      <div><span style="color:#888;font-size:9px">Nama</span><br><b style="font-size:11px">${p.nama}</b></div>
+      <div style="text-align:right"><span style="color:#888;font-size:9px">Kode Peternak</span><br><b style="font-size:11px">${p.kode}</b></div>
     </div>
-    <div style="padding:2px 0;font-size:10px;color:#555">Periode: <b>${fmtTglShort(dari)}</b> s/d <b>${fmtTglShort(sampai)}</b></div>
-    <hr style="border:none;border-top:1px solid #ddd;margin:4px 0">
-    <div style="font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">📋 Setoran Susu Harian</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="background:#f5f5f5"><th style="padding:4px 6px;text-align:left;font-size:10px;color:#888">Tanggal</th><th style="padding:4px 6px;text-align:right;font-size:10px;color:#888">Pagi (L)</th><th style="padding:4px 6px;text-align:right;font-size:10px;color:#888">Sore (L)</th><th style="padding:4px 6px;text-align:right;font-size:10px;color:#888">Total (L)</th></tr></thead>
+    <div style="padding:1px 0;font-size:9px;color:#555">Periode: <b>${fmtTglShort(dari)}</b> s/d <b>${fmtTglShort(sampai)}</b></div>
+    <hr style="border:none;border-top:1px solid #ddd;margin:3px 0">
+    <div style="font-size:10px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">📋 Setoran Susu Harian</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#f5f5f5"><th style="padding:2px 4px;text-align:left;font-size:9px;color:#888">Tanggal</th><th style="padding:2px 4px;text-align:right;font-size:9px;color:#888">Pagi (L)</th><th style="padding:2px 4px;text-align:right;font-size:9px;color:#888">Sore (L)</th><th style="padding:2px 4px;text-align:right;font-size:9px;color:#888">Total (L)</th></tr></thead>
       <tbody>${tableRows}</tbody>
     </table>
-    <div style="margin-top:6px;padding:8px;background:#f8f9fa;border-radius:6px;font-size:12px">
-      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Total Pagi</span><span><b>${totalPagi.toFixed(1)} L</b></span></div>
-      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Total Sore</span><span><b>${totalSore.toFixed(1)} L</b></span></div>
-      <div style="display:flex;justify-content:space-between;padding:2px 0;border-top:1px solid #ddd;margin-top:4px;padding-top:5px"><span><b>Grand Total Susu</b></span><span><b>${liter.toFixed(1)} L</b></span></div>
-      <div style="display:flex;justify-content:space-between;padding:2px 0"><span>Harga /Liter</span><span>Rp ${fmtRp(harga)}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:2px 0;font-size:13px;color:#007aff"><span><b>Pendapatan Kotor (Bruto)</b></span><span><b>Rp ${fmtRp(bruto)}</b></span></div>
+    <div style="margin-top:4px;padding:6px;background:#f8f9fa;border-radius:4px;font-size:11px">
+      <div style="display:flex;justify-content:space-between;padding:1px 0"><span>Total Pagi</span><span><b>${totalPagi.toFixed(1)} L</b></span></div>
+      <div style="display:flex;justify-content:space-between;padding:1px 0"><span>Total Sore</span><span><b>${totalSore.toFixed(1)} L</b></span></div>
+      <div style="display:flex;justify-content:space-between;padding:1px 0;border-top:1px solid #ddd;margin-top:2px;padding-top:3px"><span><b>Grand Total Susu</b></span><span><b>${liter.toFixed(1)} L</b></span></div>
+      <div style="display:flex;justify-content:space-between;padding:1px 0"><span>Harga /Liter</span><span>Rp ${fmtRp(harga)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:1px 0;font-size:12px;color:#007aff"><span><b>Pendapatan Kotor (Bruto)</b></span><span><b>Rp ${fmtRp(bruto)}</b></span></div>
     </div>
-    <hr style="border:none;border-top:1px solid #ddd;margin:8px 0">
-    <div style="font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">✂️ Rincian Potongan</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="background:#fef2f2"><th style="padding:4px 6px;text-align:left;font-size:10px;color:#888">Jenis Potongan</th><th style="padding:4px 6px;text-align:right;font-size:10px;color:#888">Jumlah</th></tr></thead>
+    <hr style="border:none;border-top:1px solid #ddd;margin:4px 0">
+    <div style="font-size:10px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">✂️ Rincian Potongan</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#fef2f2"><th style="padding:2px 4px;text-align:left;font-size:9px;color:#888">Jenis Potongan</th><th style="padding:2px 4px;text-align:right;font-size:9px;color:#888">Jumlah</th></tr></thead>
       <tbody>${potTableRows}</tbody>
-      <tfoot><tr style="background:#fee2e2"><td style="padding:5px 6px;font-weight:bold;font-size:12px">Total Potongan</td><td style="padding:5px 6px;text-align:right;font-weight:bold;color:#dc3545;font-size:12px">- Rp ${fmtRp(totalPot)}</td></tr></tfoot>
+      <tfoot><tr style="background:#fee2e2"><td style="padding:3px 4px;font-weight:bold;font-size:11px">Total Potongan</td><td style="padding:3px 4px;text-align:right;font-weight:bold;color:#dc3545;font-size:11px">- Rp ${fmtRp(totalPot)}</td></tr></tfoot>
     </table>
     ${pakanInfo}
     ${tabInfo}
-    <div style="margin-top:12px;padding:12px;border-radius:8px;text-align:center;${totalBg}">
-      <div style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:4px">TOTAL PEMBAYARAN BERSIH</div>
-      <div style="font-size:22px;font-weight:bold;${totalColor}">Rp ${fmtRp(bersih)}</div>
-      ${hutangGulung > 0 ? `<div style="font-size:10px;color:#dc3545;margin-top:2px">⚠️ Menunggak Hutang Rp ${fmtRp(hutangGulung)} (Gulung)</div>` : ''}
+    <div style="margin-top:8px;padding:10px;border-radius:8px;text-align:center;${totalBg}">
+      <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:3px">TOTAL PEMBAYARAN BERSIH</div>
+      <div style="font-size:20px;font-weight:bold;${totalColor}">Rp ${fmtRp(bersih)}</div>
+      ${hutangGulung > 0 ? `<div style="font-size:9px;color:#dc3545;margin-top:2px">⚠️ Menunggak Hutang Rp ${fmtRp(hutangGulung)} (Gulung)</div>` : ''}
+    </div>
     </div>`;
       }
 
       function getSlipCSS() {
         return `
-    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;font-size:12px;width:148mm;min-height:200mm;margin:0 auto;padding:16px 20px;line-height:1.6;color:#1c1c1e;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;font-size:11px;width:148mm;margin:0 auto;padding:0;line-height:1.5;color:#1c1c1e;box-sizing:border-box}
     img{display:block;margin:0 auto}
     table{width:100%;border-collapse:collapse}
-    hr{border:none;margin:6px 0}
-    @media print{body{margin:0;padding:10mm 12mm;width:148mm;min-height:auto} @page{size:148mm 210mm;margin:0}}
+    hr{border:none;margin:4px 0}
+    .slip-page{width:148mm;height:210mm;box-sizing:border-box;padding:8mm 12mm;display:flex;flex-direction:column;justify-content:center;page-break-after:always;page-break-inside:avoid;margin:0 auto}
+    .slip-page:last-child{page-break-after:auto}
+    .slip-content{flex-shrink:1}
+    @media print{body{margin:0;padding:0;width:148mm} .slip-page{margin:0;padding:8mm 12mm} @page{size:148mm 210mm;margin:0}}
+    @media screen{.slip-page{border:1px solid #ddd;margin-bottom:20px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.1)}}
   `;
       }
 
       function cetakSlip(kode, dari, sampai) {
         const d = buildSlipData(kode, dari, sampai); if (!d) return;
         const w = window.open('', '_blank');
-        w.document.write(`<html><head><title>Slip - ${d.p.nama}</title><style>${getSlipCSS()}</style></head><body>${buildSlipHTML(d, dari, sampai)}</body></html>`);
+        w.document.write(`<html><head><title>Slip - ${d.p.nama}</title><style>${getSlipCSS()}</style></head><body><div class="slip-page">${buildSlipHTML(d, dari, sampai)}</div></body></html>`);
         w.document.close(); w.print();
       }
 
@@ -4703,8 +4709,7 @@
         pList.forEach((p, idx) => {
           const d = buildSlipData(p.kode, dari, sampai);
           if (!d) return;
-          const pageBreak = idx < pList.length - 1 ? 'page-break-after:always;' : '';
-          content += `<div style="${pageBreak}">${buildSlipHTML(d, dari, sampai)}</div>`;
+          content += `<div class="slip-page">${buildSlipHTML(d, dari, sampai)}</div>`;
         });
 
         w.document.write(`<html><head><title>Cetak Semua Slip</title><style>${getSlipCSS()}</style></head><body>${content}</body></html>`);
@@ -4715,7 +4720,7 @@
         const d = buildSlipData(kode, dari, sampai); if (!d) { toast('Data tidak ditemukan', 'err'); return; }
         toast('Generating PDF...', 'info');
         const container = document.createElement('div');
-        container.style.cssText = 'width:148mm;padding:16px 20px;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.6;color:#1c1c1e;box-sizing:border-box';
+        container.style.cssText = 'width:148mm;height:210mm;padding:8mm 12mm;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.5;color:#1c1c1e;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center';
         container.innerHTML = buildSlipHTML(d, dari, sampai);
         document.body.appendChild(container);
         try {
@@ -4738,7 +4743,7 @@
           const d = buildSlipData(kode, dari, sampai);
           if (!d) continue;
           const container = document.createElement('div');
-          container.style.cssText = 'width:148mm;padding:16px 20px;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.6;color:#1c1c1e;box-sizing:border-box;position:absolute;left:-9999px;top:0';
+          container.style.cssText = 'width:148mm;height:210mm;padding:8mm 12mm;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.5;color:#1c1c1e;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;position:absolute;left:-9999px;top:0';
           container.innerHTML = buildSlipHTML(d, dari, sampai);
           document.body.appendChild(container);
           try {
@@ -4761,52 +4766,53 @@
         const logoSrc = getSlipLogoSrc();
         const tabPerLiter = p.tab || 200;
         return `
-    <div style="text-align:center;margin-bottom:12px">
-      ${logoSrc ? `<img src="${logoSrc}" style="width:100px;height:100px;border-radius:8px;object-fit:contain;margin-bottom:4px" alt="Logo">` : ''}
-      <div style="font-size:14px;font-weight:800;letter-spacing:0.3px">UD ADIL BROTHERS</div>
-      <div style="font-size:10px;color:#666;margin-top:1px">BUKTI TABUNGAN PETERNAK</div>
+    <div class="slip-content">
+    <div style="text-align:center;margin-bottom:8px">
+      ${logoSrc ? `<img src="${logoSrc}" style="width:60px;height:60px;border-radius:6px;object-fit:contain;margin-bottom:3px" alt="Logo">` : ''}
+      <div style="font-size:13px;font-weight:bold;letter-spacing:0.3px">UD ADIL BROTHERS</div>
+      <div style="font-size:8px;color:#666;margin-top:1px">BUKTI TABUNGAN PETERNAK</div>
     </div>
-    <div style="margin-bottom:20px;padding:12px;border:1px dashed #ccc;border-radius:8px;background:#fafafa">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="color:#666;font-size:12px">Nama Peternak:</span>
-        <b style="font-size:14px">${p.nama}</b>
+    <div style="margin-bottom:12px;padding:8px;border:1px dashed #ccc;border-radius:6px;background:#fafafa">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:#666;font-size:10px">Nama Peternak:</span>
+        <b style="font-size:12px">${p.nama}</b>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="color:#666;font-size:12px">Kode Peternak:</span>
-        <b style="font-size:14px">${p.kode}</b>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:#666;font-size:10px">Kode Peternak:</span>
+        <b style="font-size:12px">${p.kode}</b>
       </div>
       <div style="display:flex;justify-content:space-between">
-        <span style="color:#666;font-size:12px">Periode Setoran:</span>
-        <span style="font-size:13px;font-weight:600">${fmtTglShort(dari)} s/d ${fmtTglShort(sampai)}</span>
+        <span style="color:#666;font-size:10px">Periode Setoran:</span>
+        <span style="font-size:11px;font-weight:600">${fmtTglShort(dari)} s/d ${fmtTglShort(sampai)}</span>
       </div>
     </div>
-    <div style="margin-bottom:20px;padding:16px;background:#e3f2fd;border-left:4px solid #1976d2;border-radius:4px">
-      <div style="font-size:11px;font-weight:bold;color:#1565c0;text-transform:uppercase;margin-bottom:8px">Rincian Tabungan Periode Ini</div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+    <div style="margin-bottom:12px;padding:12px;background:#e3f2fd;border-left:4px solid #1976d2;border-radius:4px">
+      <div style="font-size:10px;font-weight:bold;color:#1565c0;text-transform:uppercase;margin-bottom:6px">Rincian Tabungan Periode Ini</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px">
         <span>Total Setoran Susu</span>
         <span><b>${liter.toFixed(1)} L</b></span>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px">
         <span>Tarif Tabungan</span>
         <span><b>Rp ${fmtRp(tabPerLiter)} / Liter</b></span>
       </div>
-      <hr style="border-top:1px solid #90caf9;margin:10px 0">
-      <div style="display:flex;justify-content:space-between;font-size:15px;color:#0d47a1">
+      <hr style="border-top:1px solid #90caf9;margin:8px 0">
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:#0d47a1">
         <span><b>Total Tabungan Masuk</b></span>
         <span><b>Rp ${fmtRp(tF)}</b></span>
       </div>
     </div>
-    <div style="text-align:center;font-size:10px;color:#999;margin-top:30px">
+    <div style="text-align:center;font-size:9px;color:#999;margin-top:16px">
       Tabungan ini disimpan oleh Koperasi/UD Adil Brothers dan dapat diambil sesuai kesepakatan.<br>
       Dicetak pada: ${fmtTgl(dts(new Date()))}
     </div>
-  `;
+    </div>`;
       }
 
       function cetakSlipTabungan(kode, dari, sampai) {
         const d = buildSlipData(kode, dari, sampai); if (!d) return;
         const w = window.open('', '_blank');
-        w.document.write(`<html><head><title>Tabungan - ${d.p.nama}</title><style>${getSlipCSS()}</style></head><body>${buildSlipTabunganHTML(d, dari, sampai)}</body></html>`);
+        w.document.write(`<html><head><title>Tabungan - ${d.p.nama}</title><style>${getSlipCSS()}</style></head><body><div class="slip-page">${buildSlipTabunganHTML(d, dari, sampai)}</div></body></html>`);
         w.document.close(); w.print();
       }
 
@@ -4814,7 +4820,7 @@
         const d = buildSlipData(kode, dari, sampai); if (!d) { toast('Data tidak ditemukan', 'err'); return; }
         toast('Generating PDF Tabungan...', 'info');
         const container = document.createElement('div');
-        container.style.cssText = 'width:148mm;padding:16px 20px;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.6;color:#1c1c1e;box-sizing:border-box';
+        container.style.cssText = 'width:148mm;height:210mm;padding:8mm 12mm;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.5;color:#1c1c1e;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center';
         container.innerHTML = buildSlipTabunganHTML(d, dari, sampai);
         document.body.appendChild(container);
         try {
@@ -4837,7 +4843,7 @@
           const d = buildSlipData(kode, dari, sampai);
           if (!d || d.tF <= 0) continue; // Hanya export yang ada tabungannya
           const container = document.createElement('div');
-          container.style.cssText = 'width:148mm;padding:16px 20px;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.6;color:#1c1c1e;box-sizing:border-box;position:absolute;left:-9999px;top:0';
+          container.style.cssText = 'width:148mm;height:210mm;padding:8mm 12mm;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.5;color:#1c1c1e;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;position:absolute;left:-9999px;top:0';
           container.innerHTML = buildSlipTabunganHTML(d, dari, sampai);
           document.body.appendChild(container);
           try {
