@@ -2892,14 +2892,25 @@
           inData.forEach(k => { if (!k.id) k.id = genId(); });
           outData.forEach(k => { if (!k.id) k.id = genId(); });
 
-          const results = await Promise.all([
-            sb.from('pemasukan').upsert(inData.map(k => ({
-              id: k.id, tgl: k.tgl, kategori: k.kat, keterangan: k.ket, volume: k.liter, harga: k.harga, nominal: k.nominal
-            }))),
-            sb.from('pengeluaran').upsert(outData.map(k => ({
-              id: k.id, tgl: k.tgl, kategori: k.kat, keterangan: k.ket, nominal: k.nominal
-            })))
-          ]);
+          const results = [];
+          
+          if (inData.length) {
+            const inChunks = chunkArray(inData, 500);
+            for (const chunk of inChunks) {
+              results.push(await sb.from('pemasukan').upsert(chunk.map(k => ({
+                id: k.id, tgl: k.tgl, kategori: k.kat, keterangan: k.ket, volume: k.liter, harga: k.harga, nominal: k.nominal
+              }))));
+            }
+          }
+          
+          if (outData.length) {
+            const outChunks = chunkArray(outData, 500);
+            for (const chunk of outChunks) {
+              results.push(await sb.from('pengeluaran').upsert(chunk.map(k => ({
+                id: k.id, tgl: k.tgl, kategori: k.kat, keterangan: k.ket, nominal: k.nominal
+              }))));
+            }
+          }
 
           const firstError = results.find(r => r.error);
           if (firstError) throw new Error(firstError.error.message);
@@ -2913,37 +2924,49 @@
         }
       }
 
-      // pushToSupabase() — Helper untuk mengunggah semua tabel ke Supabase
+      // chunkArray() — Pecah array besar menjadi potongan-potongan kecil demi stabilitas sync
+      function chunkArray(array, size) {
+        const chunks = [];
+        for (let i = 0; i < array.length; i += size) {
+          chunks.push(array.slice(i, i + size));
+        }
+        return chunks;
+      }
+
+      // pushToSupabase() — Helper untuk mengunggah semua tabel ke Supabase (dengan Chunking)
       async function pushToSupabase() {
         const promises = [];
 
-        // App Config (Objek non-relasional)
+        // 1. App Config (Objek non-relasional)
         promises.push(sb.from('app_config').upsert([
           { key: 'pot_rekap', value: db.pot_rekap },
           { key: 'hutang_bergulir', value: db.hutang_bergulir },
           { key: 'rekap_diproses', value: db.rekap_diproses }
         ]));
 
-        // Wilayah
+        // 2. Wilayah
         if (db.wilayah && db.wilayah.length) {
           promises.push(sb.from('wilayah').upsert(db.wilayah.map(name => ({ name }))));
         }
 
-        // Peternak
+        // 3. Peternak
         if (db.peternak && db.peternak.length) {
           promises.push(sb.from('peternak').upsert(db.peternak.map(p => ({
             kode: p.kode, nama: p.nama, wilayah_name: p.wilayah, tab: p.tab || 200, status: p.status || 'aktif'
           }))));
         }
 
-        // Susu (Batch upsert dengan onConflict agar tidak duplikat tgl-peternak)
+        // 4. Susu (Chunking: pecah per 500 baris agar tidak "Payload Too Large")
         if (db.susu && db.susu.length) {
-          promises.push(sb.from('susu').upsert(db.susu.map(s => ({
-            tgl: s.tgl, peternak_kode: s.kode, pagi: s.pagi || 0, sore: s.sore || 0
-          })), { onConflict: 'tgl,peternak_kode' }));
+          const susuChunks = chunkArray(db.susu, 500);
+          susuChunks.forEach(chunk => {
+            promises.push(sb.from('susu').upsert(chunk.map(s => ({
+              tgl: s.tgl, peternak_kode: s.kode, pagi: s.pagi || 0, sore: s.sore || 0
+            })), { onConflict: 'tgl,peternak_kode' }));
+          });
         }
 
-        // Pinjaman & Beras
+        // 5. Pinjaman & Beras
         if (db.pinjaman && db.pinjaman.length) {
           promises.push(sb.from('pinjaman').upsert(db.pinjaman.map(p => ({
             id: p.id, peternak_kode: p.kode, tgl: p.tgl, nominal: p.nominal, cicilan: p.cicilan,
@@ -2957,44 +2980,49 @@
           }))));
         }
 
-        // Keuangan (Split ke tabel pemasukan & pengeluaran)
+        // 6. Keuangan (Chunking: pecah per 500 baris)
         if (db.keuangan && db.keuangan.length) {
           const inData = db.keuangan.filter(k => k.tipe === 'in');
           const outData = db.keuangan.filter(k => k.tipe === 'out');
           
           if (inData.length) {
-            promises.push(sb.from('pemasukan').upsert(inData.map(k => ({
-              id: k.id || genId(), tgl: k.tgl, kategori: k.kat, keterangan: k.ket, volume: k.liter, harga: k.harga, nominal: k.nominal
-            }))));
+            const inChunks = chunkArray(inData, 500);
+            inChunks.forEach(chunk => {
+              promises.push(sb.from('pemasukan').upsert(chunk.map(k => ({
+                id: k.id || genId(), tgl: k.tgl, kategori: k.kat, keterangan: k.ket, volume: k.liter, harga: k.harga, nominal: k.nominal
+              }))));
+            });
           }
           if (outData.length) {
-            promises.push(sb.from('pengeluaran').upsert(outData.map(k => ({
-              id: k.id || genId(), tgl: k.tgl, kategori: k.kat, keterangan: k.ket, nominal: k.nominal
-            }))));
+            const outChunks = chunkArray(outData, 500);
+            outChunks.forEach(chunk => {
+              promises.push(sb.from('pengeluaran').upsert(chunk.map(k => ({
+                id: k.id || genId(), tgl: k.tgl, kategori: k.kat, keterangan: k.ket, nominal: k.nominal
+              }))));
+            });
           }
         }
 
-        // Karyawan
+        // 7. Karyawan, Pakan, Jadwal
         if (db.karyawan && db.karyawan.length) {
           promises.push(sb.from('karyawan').upsert(db.karyawan.map(k => ({
             id: k.id, nama: k.nama, jabatan: k.jabatan, gaji: k.gaji, tunjangan: k.tunjangan, aktif: k.aktif
           }))));
         }
-
-        // Pakan
         if (db.pakan_masuk && db.pakan_masuk.length) {
           promises.push(sb.from('pakan_masuk').upsert(db.pakan_masuk.map(m => ({
             id: m.id, tgl: m.tgl, zak: m.zak, hbeli: m.hbeli, bongkar: m.bongkar, ket: m.ket
           }))));
         }
         if (db.pakan_dist && db.pakan_dist.length) {
-          promises.push(sb.from('pakan_dist').upsert(db.pakan_dist.map(d => ({
-            id: d.id, tgl: d.tgl, peternak_kode: d.kode, nama: d.nama, wilayah: d.wilayah,
-            zak: d.zak, hjual: d.hjual, antar: d.antar, hpp_total: d.hppTotal
-          }))));
+          const distChunks = chunkArray(db.pakan_dist, 500);
+          distChunks.forEach(chunk => {
+            promises.push(sb.from('pakan_dist').upsert(chunk.map(d => ({
+              id: d.id, tgl: d.tgl, peternak_kode: d.kode, nama: d.nama, wilayah: d.wilayah,
+              zak: d.zak, hjual: d.hjual, antar: d.antar, hpp_total: d.hppTotal
+            }))));
+          });
         }
-
-        // Jadwal Kirim
         if (db.jadwal_kirim && db.jadwal_kirim.length) {
           promises.push(sb.from('jadwal_kirim').upsert(db.jadwal_kirim.map(j => ({
             id: j.id, day_num: j.day, hari: j.hari, tujuan: j.tujuan, harga: j.harga, catatan: j.catatan
@@ -3008,6 +3036,7 @@
           throw new Error(`${firstError.error.message} (${firstError.error.code})`);
         }
       }
+
 
       // ld() = "load" — Ambil data dari Supabase saat pertama buka
       // Kalau Supabase tidak bisa diakses, fallback ke localStorage
@@ -3046,6 +3075,31 @@
         }
       });
 
+      // fetchFullTable() — Helper untuk menarik seluruh baris data (Pagination bypass Supabase limit 1000)
+      async function fetchFullTable(tableName) {
+        let allData = [];
+        let from = 0;
+        let to = 999;
+        let finished = false;
+
+        while (!finished) {
+          const { data, error } = await sb.from(tableName).select('*').range(from, to).order(tableName === 'susu' ? 'tgl' : 'id', { ascending: false });
+          if (error) throw error;
+          if (!data || data.length === 0) {
+            finished = true;
+          } else {
+            allData = allData.concat(data);
+            if (data.length < 1000) {
+              finished = true;
+            } else {
+              from += 1000;
+              to += 1000;
+            }
+          }
+        }
+        return allData;
+      }
+
       async function syncFromSupabase() {
         const indicator = document.getElementById('sync-indicator');
         if (indicator) indicator.style.display = 'flex';
@@ -3059,15 +3113,13 @@
         }
 
         try {
+          // Tarik tabel kecil secara paralel
           const results = await Promise.all([
             sb.from('app_config').select('*'),
             sb.from('wilayah').select('*'),
             sb.from('peternak').select('*'),
-            sb.from('susu').select('*'),
             sb.from('pinjaman').select('*'),
             sb.from('beras').select('*'),
-            sb.from('pemasukan').select('*'),
-            sb.from('pengeluaran').select('*'),
             sb.from('karyawan').select('*'),
             sb.from('pakan_masuk').select('*'),
             sb.from('pakan_dist').select('*'),
@@ -3077,10 +3129,17 @@
           const firstError = results.find(r => r.error);
           if (firstError) throw new Error(`${firstError.error.message} (${firstError.error.code})`);
 
+          // Tarik tabel besar secara bertahap (Pagination)
+          const [susData, pemData, penData] = await Promise.all([
+            fetchFullTable('susu'),
+            fetchFullTable('pemasukan'),
+            fetchFullTable('pengeluaran')
+          ]);
+
           const res = results;
 
           // Rekonstruksi DB
-          const [conf, wil, pet, sus, pin, ber, pem, pen, kar, pkm, pkd, jdk] = res.map(r => r.data);
+          const [conf, wil, pet, pin, ber, kar, pkm, pkd, jdk] = res.map(r => r.data);
 
           // Mapping App Config
           const configMap = {};
@@ -3095,9 +3154,11 @@
             kode: p.kode, nama: p.nama, wilayah: p.wilayah_name, tab: p.tab, status: p.status
           }));
           sortPet();
-          db.susu = (sus || []).map(s => ({
+          
+          db.susu = (susData || []).map(s => ({
             tgl: s.tgl, kode: s.peternak_kode, pagi: s.pagi, sore: s.sore
           }));
+          
           db.pinjaman = (pin || []).map(p => ({
             id: p.id, kode: p.peternak_kode, tgl: p.tgl, nominal: p.nominal, cicilan: p.cicilan,
             sisa: p.sisa, riwayatCicilan: p.riwayat_cicilan, ket: p.ket, lunas: p.lunas, tglLunas: p.tgl_lunas
@@ -3108,8 +3169,8 @@
           }));
           
           db.keuangan = [
-            ...(pem || []).map(k => ({ id: k.id, tgl: k.tgl, tipe: 'in', kat: k.kategori, ket: k.keterangan, liter: k.volume, harga: k.harga, nominal: k.nominal })),
-            ...(pen || []).map(k => ({ id: k.id, tgl: k.tgl, tipe: 'out', kat: k.kategori, ket: k.keterangan, nominal: k.nominal }))
+            ...(pemData || []).map(k => ({ id: k.id, tgl: k.tgl, tipe: 'in', kat: k.kategori, ket: k.keterangan, liter: k.volume, harga: k.harga, nominal: k.nominal })),
+            ...(penData || []).map(k => ({ id: k.id, tgl: k.tgl, tipe: 'out', kat: k.kategori, ket: k.keterangan, nominal: k.nominal }))
           ].sort((a, b) => b.tgl.localeCompare(a.tgl));
           db.karyawan = (kar || []).map(k => ({
             id: k.id, nama: k.nama, jabatan: k.jabatan, gaji: k.gaji, tunjangan: k.tunjangan, aktif: k.aktif
