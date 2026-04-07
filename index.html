@@ -3559,8 +3559,8 @@
         const sidebarLogoImg = document.getElementById('sidebar-logo-img');
         if (sidebarLogoImg) {
           // Use the same base64 logo from the original header
-          const headerLogo = document.querySelector('.header-logo img');
-          if (headerLogo) sidebarLogoImg.src = headerLogo.src;
+          const headerLogo = document.querySelector('#sidebar-logo-img');
+          if (headerLogo && headerLogo !== sidebarLogoImg) sidebarLogoImg.src = headerLogo.src;
         }
       })();
 
@@ -4933,8 +4933,8 @@
       }
 
       function getSlipLogoSrc() {
-        // Ambil logo dari header
-        const logoEl = document.querySelector('.header-logo img');
+        // Ambil logo dari sidebar
+        const logoEl = document.querySelector('#sidebar-logo-img');
         return logoEl ? logoEl.src : '';
       }
 
@@ -6105,7 +6105,7 @@
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
 
         // Salin logo ke header mobile
-        const desktopLogoImg = document.querySelector('.header-logo img');
+        const desktopLogoImg = document.querySelector('#sidebar-logo-img');
         const mLogo = document.getElementById('mobile-logo');
         if (desktopLogoImg && mLogo) {
           const img = document.createElement('img');
