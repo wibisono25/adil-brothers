@@ -65,12 +65,18 @@
       padding: 0 28px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      height: 120px;
+      justify-content: flex-end;
+      height: 56px;
       position: sticky;
       top: 0;
       z-index: 100;
-      border-bottom: 1px solid var(--border)
+      border-bottom: 1px solid var(--border);
+      margin-left: 220px;
+      transition: margin-left 0.3s cubic-bezier(.4,0,.2,1)
+    }
+
+    body.sidebar-collapsed .header {
+      margin-left: 64px
     }
 
     .header-brand {
@@ -128,51 +134,195 @@
       transform: scale(1.02)
     }
 
-    .nav-wrap {
-      background: rgba(255, 255, 255, 0.78);
-      backdrop-filter: saturate(180%) blur(20px);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 28px;
-      overflow-x: auto
+    /* ==========  SIDEBAR  ========== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 220px;
+      height: 100vh;
+      background: linear-gradient(180deg, #1a1d2e 0%, #141624 100%);
+      z-index: 150;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+      box-shadow: 2px 0 16px rgba(0,0,0,0.15)
     }
 
-    .nav {
+    body.sidebar-collapsed .sidebar {
+      width: 64px
+    }
+
+    .sidebar-brand {
       display: flex;
-      gap: 4px
+      align-items: center;
+      gap: 12px;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      min-height: 56px
+    }
+
+    .sidebar-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0
+    }
+
+    .sidebar-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain
+    }
+
+    .sidebar-info {
+      overflow: hidden;
+      white-space: nowrap;
+      opacity: 1;
+      transition: opacity 0.2s
+    }
+
+    body.sidebar-collapsed .sidebar-info {
+      opacity: 0;
+      width: 0
+    }
+
+    .sidebar-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+      line-height: 1.2
+    }
+
+    .sidebar-sub {
+      font-size: 10px;
+      color: rgba(255,255,255,0.45);
+      font-weight: 500
+    }
+
+    .sidebar-toggle {
+      position: absolute;
+      top: 20px;
+      right: -12px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: #fff;
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      z-index: 160;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+      transition: all 0.2s
+    }
+
+    .sidebar-toggle:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      transform: scale(1.1)
+    }
+
+    body.sidebar-collapsed .sidebar-toggle {
+      right: -12px
+    }
+
+    /* SIDEBAR NAV */
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.1) transparent
+    }
+
+    .sidebar-nav::-webkit-scrollbar {
+      width: 3px
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px
     }
 
     .nav-tab {
-      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 12px;
       font-size: 13px;
       background: transparent;
       border: none;
       cursor: pointer;
-      color: var(--text2);
-      border-radius: 20px;
+      color: rgba(255,255,255,0.6);
+      border-radius: 8px;
       white-space: nowrap;
       font-family: inherit;
-      transition: all 0.25s;
+      transition: all 0.2s;
       font-weight: 500;
-      letter-spacing: -0.01em
+      letter-spacing: -0.01em;
+      text-align: left;
+      margin-bottom: 2px
     }
 
     .nav-tab:hover {
-      color: var(--text);
-      background: rgba(0, 0, 0, 0.04)
+      color: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.08)
     }
 
     .nav-tab.active {
       color: #fff;
       background: var(--accent);
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3)
+      box-shadow: 0 2px 8px rgba(0,122,255,0.35)
     }
+
+    .nav-tab .nav-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      width: 22px;
+      text-align: center
+    }
+
+    .nav-tab .nav-label {
+      overflow: hidden;
+      transition: opacity 0.2s, width 0.3s;
+      opacity: 1
+    }
+
+    body.sidebar-collapsed .nav-tab .nav-label {
+      opacity: 0;
+      width: 0;
+      overflow: hidden
+    }
+
+    body.sidebar-collapsed .nav-tab {
+      justify-content: center;
+      padding: 10px 0
+    }
+
+    /* OLD NAV-WRAP: hidden on desktop (replaced by sidebar) */
+    .nav-wrap { display: none }
 
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 24px 20px
+      padding: 24px 20px;
+      margin-left: max(220px, calc(220px + (100vw - 220px - 1200px) / 2));
+      transition: margin-left 0.3s cubic-bezier(.4,0,.2,1)
+    }
+
+    body.sidebar-collapsed .container {
+      margin-left: max(64px, calc(64px + (100vw - 64px - 1200px) / 2));
     }
 
     .page {
@@ -1003,7 +1153,8 @@
 
     @media(max-width:640px) {
       .container {
-        padding: 14px 10px
+        padding: 14px 10px;
+        margin-left: 0
       }
 
       .card {
@@ -1011,11 +1162,8 @@
       }
 
       .header {
-        padding: 0 16px
-      }
-
-      .nav-wrap {
-        padding: 8px 12px
+        padding: 0 16px;
+        margin-left: 0
       }
 
       .nav-tab {
@@ -1073,6 +1221,11 @@
       }
 
       .nav-wrap {
+        display: none !important;
+      }
+
+      /* Sembunyikan sidebar di HP */
+      .sidebar {
         display: none !important;
       }
 
@@ -1569,47 +1722,49 @@
 
 <body>
 
-  <div class="header">
-    <div class="header-brand">
-      <div class="header-logo"
-        style="width:100px;height:100px;background:none;box-shadow:none;overflow:hidden;padding:1px;border-radius:6px">
-        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAUEBAQEAwUEBAQGBQUGCA0ICAcHCBALDAkNExAUExIQEhIUFx0ZFBYcFhISGiMaHB4fISEhFBkkJyQgJh0gISD/2wBDAQUGBggHCA8ICA8gFRIVICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICD/wAARCACFAMgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7LooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooABRQKKACiiigAooooAKKKKACiiigAooqKe5t7WPzLmeOFP70jBR+tAXsS0UyKaKeMSQypKh6MjAg/iKqXGsaVazNBc6jbxSr95HkAIppN6IlySV2y9RSI6SIsiMGRhkMDkEetLSKCiiigAooooAKKKKACiiigAooooABRQKKACiiigAooooAKKKKACiioYlcu8shI38Kv8AdH+NAGZrOtpptjPPGULIpVN/R5Oyj19689vYp5z/AGh4mvpY5ZBmK2UAykeu08Iv16122sN4ds79Z7ucrfRxgII8yPGvqq8h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" style="width:100%;height:100%;object-fit:contain">
+  <!-- SIDEBAR DESKTOP -->
+  <aside class="sidebar" id="app-sidebar">
+    <button class="sidebar-toggle" id="sidebar-toggle" title="Collapse / Expand">&#9664;</button>
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">
+        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAUEBAQEAwUEBAQGBQUGCA0ICAcHCBALDAkNExAUExIQEhIUFx0ZFBYcFhISGiMaHB4fISEhFBkkJyQgJh0gISD/2wBDAQUGBggHCA8ICA8gFRIVICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICD/wAARCACFAMgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7LooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooABRQKKACiiigAooooAKKKKACiiigAooqKe5t7WPzLmeOFP70jBR+tAXsS0UyKaKeMSQypKh6MjAg/iKqXGsaVazNBc6jbxSr95HkAIppN6IlySV2y9RSI6SIsiMGRhkMDkEetLSKCiiigAooooAKKKKACiiigAooooABRQKKACiiigAooooAKKKKACiioYlcu8shI38Kv8AdH+NAGZrOtpptjPPGULIpVN/R5Oyj19689vYp5z/AGh4mvpY5ZBmK2UAykeu08Iv16122sN4ds79Z7ucrfRxgII8yPGvqq8h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" id="sidebar-logo-img" alt="Logo" style="width:100%;height:100%;object-fit:contain">
       </div>
-
-      <div>
-        <div class="header-title">Adil Brothers Fresh Milks</div>
-        <div class="header-sub">Sistem Manajemen Susu · Kandangtepus</div>
+      <div class="sidebar-info">
+        <div class="sidebar-title">Adil Brothers</div>
+        <div class="sidebar-sub">Fresh Milks</div>
       </div>
     </div>
+    <div class="sidebar-nav">
+      <button class="nav-tab active" data-page="dashboard"><span class="nav-icon">&#127968;</span><span class="nav-label">Dashboard</span></button>
+      <button class="nav-tab" data-page="wilayah"><span class="nav-icon">&#128506;</span><span class="nav-label">Wilayah</span></button>
+      <button class="nav-tab" data-page="peternak"><span class="nav-icon">&#128104;</span><span class="nav-label">Peternak</span></button>
+      <button class="nav-tab" data-page="input"><span class="nav-icon">&#129371;</span><span class="nav-label">Input Harian</span></button>
+      <button class="nav-tab" data-page="riwayat"><span class="nav-icon">&#128203;</span><span class="nav-label">Riwayat</span></button>
+      <button class="nav-tab" data-page="pinjaman"><span class="nav-icon">&#128176;</span><span class="nav-label">SP &amp; Beras</span></button>
+      <button class="nav-tab" data-page="pakan"><span class="nav-icon">&#127807;</span><span class="nav-label">Pakan</span></button>
+      <button class="nav-tab" data-page="keuangan"><span class="nav-icon">&#128188;</span><span class="nav-label">Keuangan</span></button>
+      <button class="nav-tab" data-page="rekap"><span class="nav-icon">&#128202;</span><span class="nav-label">Rekap Bayar</span></button>
+      <button class="nav-tab" data-page="slip"><span class="nav-icon">&#128424;</span><span class="nav-label">Slip Gaji</span></button>
+      <button class="nav-tab" data-page="tabungan"><span class="nav-icon">&#127974;</span><span class="nav-label">Tabungan</span></button>
+    </div>
+  </aside>
+
+
+
+  <!-- â•â• HEADER (ACTIONS ONLY) â•â• -->
+  <div class="header">
     <div class="header-actions">
       <div id="sync-indicator"
         style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--text2);font-weight:600;margin-right:4px">
         <span
           style="width:8px;height:8px;background:var(--accent);border-radius:50%;animation:pulse 1s infinite"></span>Sinkron...
       </div>
-      <button class="btn-header" id="btn-sync-manual" title="Sinkron data dari Google Sheets">🔄 Sinkron</button>
-      <button class="btn-header" id="btn-export">⬇ Export</button>
-      <button class="btn-header" id="btn-import-trigger">⬆ Import</button>
-      <!-- Tombol Reset disembunyikan (display:none) agar tidak sengaja tertekan saat operasional harian -->
+      <button class="btn-header" id="btn-sync-manual" title="Sinkron data dari Google Sheets">&#128259; Sinkron</button>
+      <button class="btn-header" id="btn-export">&#11015; Export</button>
+      <button class="btn-header" id="btn-import-trigger">&#11014; Import</button>
       <button class="btn-header" id="btn-migrate-supabase"
-        style="display:none;background:#ef4444;color:white;margin-left:10px">🚀 Reset & Mulai Baru</button>
+        style="display:none;background:#ef4444;color:white;margin-left:10px">&#128640; Reset &amp; Mulai Baru</button>
       <input type="file" id="btn-import" accept=".json" style="display:none">
-    </div>
-  </div>
-
-  <div class="nav-wrap">
-    <div class="nav">
-      <button class="nav-tab active" data-page="dashboard">🏠 Dashboard</button>
-      <button class="nav-tab" data-page="wilayah">🗺 Wilayah</button>
-      <button class="nav-tab" data-page="peternak">👨‍🌾 Peternak</button>
-      <button class="nav-tab" data-page="input">🥛 Input Harian</button>
-      <button class="nav-tab" data-page="riwayat">📋 Riwayat</button>
-      <button class="nav-tab" data-page="pinjaman">💰 SP & Beras</button>
-      <button class="nav-tab" data-page="pakan">🌿 Operasional Pakan</button>
-      <button class="nav-tab" data-page="keuangan">💼 Keuangan Usaha</button>
-      <button class="nav-tab" data-page="rekap">📊 Rekap Bayar</button>
-      <button class="nav-tab" data-page="slip">🖨 Slip Gaji</button>
-      <button class="nav-tab" data-page="tabungan">💰 Tabungan</button>
     </div>
   </div>
 
@@ -2838,8 +2993,9 @@
       //   karyawan   → data karyawan untuk penghitungan gaji otomatis
       //   hutang_bergulir → saldo hutang awal peternak (input manual)
       //   rekap_diproses  → hutang bergulir yang sudah diproses per periode
+      //   hutang_override â†’ koreksi manual terhadap hutang auto per periode
       // ============================================================
-      let db = { wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [], pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [], karyawan: [], hutang_bergulir: {}, rekap_diproses: {}, jadwal_kirim: [] };
+      let db = { wilayah: [], peternak: [], susu: [], pinjaman: [], beras: [], pot_rekap: {}, pakan_masuk: [], pakan_dist: [], keuangan: [], karyawan: [], hutang_bergulir: {}, rekap_diproses: {}, hutang_override: {}, jadwal_kirim: [] };
       let gridData = {};
       let distData = {};
       let lastDistTgl = '';
@@ -2924,7 +3080,7 @@
         }
       }
 
-      // chunkArray() — Pecah array besar menjadi potongan-potongan kecil demi stabilitas sync
+      // chunkArray() â€” Pecah array besar menjadi potongan-potongan kecil demi stabilitas sync
       function chunkArray(array, size) {
         const chunks = [];
         for (let i = 0; i < array.length; i += size) {
@@ -2933,7 +3089,7 @@
         return chunks;
       }
 
-      // pushToSupabase() — Helper untuk mengunggah semua tabel ke Supabase (dengan Chunking)
+      // pushToSupabase() â€” Helper untuk mengunggah semua tabel ke Supabase (dengan Chunking)
       async function pushToSupabase() {
         const promises = [];
 
@@ -2941,7 +3097,8 @@
         promises.push(sb.from('app_config').upsert([
           { key: 'pot_rekap', value: db.pot_rekap },
           { key: 'hutang_bergulir', value: db.hutang_bergulir },
-          { key: 'rekap_diproses', value: db.rekap_diproses }
+          { key: 'rekap_diproses', value: db.rekap_diproses },
+          { key: 'hutang_override', value: db.hutang_override }
         ]));
 
         // 2. Wilayah
@@ -3075,7 +3232,7 @@
         }
       });
 
-      // fetchFullTable() — Helper untuk menarik seluruh baris data (Pagination bypass Supabase limit 1000)
+      // fetchFullTable() â€” Helper untuk menarik seluruh baris data (Pagination bypass Supabase limit 1000)
       async function fetchFullTable(tableName) {
         let allData = [];
         let from = 0;
@@ -3148,6 +3305,7 @@
           db.pot_rekap = configMap.pot_rekap || {};
           db.hutang_bergulir = configMap.hutang_bergulir || {};
           db.rekap_diproses = configMap.rekap_diproses || {};
+          db.hutang_override = configMap.hutang_override || {};
 
           db.wilayah = (wil || []).map(w => w.name);
           db.peternak = (pet || []).map(p => ({
@@ -3378,6 +3536,33 @@
           if (pg === 'slip') refreshSlipSelects();
         });
       });
+
+      // ============================================================
+      // SIDEBAR TOGGLE (Collapse / Expand)
+      // ============================================================
+      const sidebarToggle = document.getElementById('sidebar-toggle');
+      if (sidebarToggle) {
+        if (localStorage.getItem('sidebar-collapsed') === '1') {
+          document.body.classList.add('sidebar-collapsed');
+          sidebarToggle.innerHTML = '&#9654;';
+        }
+        sidebarToggle.addEventListener('click', () => {
+          document.body.classList.toggle('sidebar-collapsed');
+          const collapsed = document.body.classList.contains('sidebar-collapsed');
+          sidebarToggle.innerHTML = collapsed ? '&#9654;' : '&#9664;';
+          localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0');
+        });
+      }
+
+      // Set sidebar logo from header logo (if old header brand exists)
+      (function() {
+        const sidebarLogoImg = document.getElementById('sidebar-logo-img');
+        if (sidebarLogoImg) {
+          // Use the same base64 logo from the original header
+          const headerLogo = document.querySelector('.header-logo img');
+          if (headerLogo) sidebarLogoImg.src = headerLogo.src;
+        }
+      })();
 
       // ════════════════════════════════════
       // WILAYAH
@@ -3974,9 +4159,9 @@
       document.getElementById('rek-harga').addEventListener('change', renderRekap);
       document.getElementById('rek-hpakan').addEventListener('change', renderRekap);
 
-      // ═══════════════════════════════════
+      // ════════════════════════════════════
       // PEMILIHAN PERIODE PAKAN UNTUK POTONGAN
-      // ═══════════════════════════════════
+      // ════════════════════════════════════
       // updatePakanPeriodDefault() — Hitung default periode pakan = 1 minggu sebelum periode susu
       // Contoh: susu 16-22 Mar → pakan 9-15 Mar
       function updatePakanPeriodDefault() {
@@ -4069,37 +4254,87 @@
       function getHutangKey(dari, sampai) { return `hb__${dari}__${sampai}`; }
 
       // Ambil hutang bergulir peternak untuk periode ini
-      // Urutan prioritas: (1) sudah diproses otomatis dari periode sebelumnya, (2) input manual
-      // getHutangBergulir() — Ambil saldo hutang bergulir peternak untuk periode ini
-      // Prioritas:
-      //   1. Jika minggu sebelumnya sudah diproses → ambil sisa hutang dari sana (otomatis)
-      //   2. Jika belum ada → pakai input manual dari hutang_bergulir
+      // Urutan prioritas:
+      //   1. Override manual per periode (koreksi user) â†’ hutang_override
+      //   2. Otomatis dari rekap periode sebelumnya â†’ rekap_diproses
+      //   3. Input manual awal (pertama kali) â†’ hutang_bergulir
       function getHutangBergulir(kode, dari, sampai) {
-        // Cek apakah ada rekap sebelumnya yang sudah diproses
-        // Cari periode yang berakhir tepat sebelum 'dari'
+        // 1. Cek override manual untuk periode ini
+        const overrideKey = getHutangKey(dari, sampai);
+        if (db.hutang_override[overrideKey]?.[kode] !== undefined) {
+          return Math.max(0, db.hutang_override[overrideKey][kode]);
+        }
+        // 2. Cek auto dari rekap periode sebelumnya
         const prevKey = cariPeriodeSebelumnya(dari);
         if (prevKey && db.rekap_diproses[prevKey]?.[kode] !== undefined) {
-          return Math.max(0, db.rekap_diproses[prevKey][kode]); // sisa hutang dari minggu lalu
+          return Math.max(0, db.rekap_diproses[prevKey][kode]);
         }
-        // Fallback ke input manual
+        // 3. Fallback ke input manual awal
         return Math.max(0, db.hutang_bergulir[kode] || 0);
       }
 
-      // cariPeriodeSebelumnya() — Cari periode rekap yang berakhir tepat sehari sebelum 'dari'
-      // Contoh: kalau dari = "2026-03-24", cari rekap yang sampai = "2026-03-23"
-      // Ini yang membuat sistem bergulir otomatis dari minggu ke minggu
+      // getAutoHutangValue() â€” Ambil nilai hutang auto murni (tanpa override)
+      // Dipakai untuk menampilkan nilai asli saat user ingin reset
+      function getAutoHutangValue(kode, dari) {
+        const prevKey = cariPeriodeSebelumnya(dari);
+        if (prevKey && db.rekap_diproses[prevKey]?.[kode] !== undefined) {
+          return { value: Math.max(0, db.rekap_diproses[prevKey][kode]), source: 'auto' };
+        }
+        return { value: Math.max(0, db.hutang_bergulir[kode] || 0), source: 'manual' };
+      }
+
+      // cariPeriodeSebelumnya() â€” Cari periode rekap terdekat yang berakhir SEBELUM 'dari'
+      // Strategi: cek mundur 1-7 hari dulu (untuk kasus standar Senin-Minggu),
+      // lalu fallback ke periode terakhir yang sampai < dari (untuk kasus gap lebih besar)
       function cariPeriodeSebelumnya(dari) {
-        // Cari rekap_diproses yang sampainya = dari-1 hari
-        const tglDari = new Date(dari + 'T00:00:00');
-        const sehari = new Date(tglDari); sehari.setDate(sehari.getDate() - 1);
-        const tglSemalem = dts(sehari);
         const keys = Object.keys(db.rekap_diproses);
-        return keys.find(k => { const parts = k.split('__'); return parts[2] === tglSemalem; }) || null;
+        if (!keys.length) return null;
+        const tglDari = new Date(dari + 'T00:00:00');
+        // 1. Cek mundur 1-7 hari â€” cocok untuk gap standar antar minggu
+        for (let i = 1; i <= 7; i++) {
+          const cek = new Date(tglDari);
+          cek.setDate(cek.getDate() - i);
+          const tglCek = dts(cek);
+          const found = keys.find(k => { const parts = k.split('__'); return parts[2] === tglCek; });
+          if (found) return found;
+        }
+        // 2. Fallback: cari periode terdekat yang berakhir sebelum 'dari'
+        let best = null;
+        let bestSampai = '';
+        keys.forEach(k => {
+          const parts = k.split('__');
+          const sampai = parts[2];
+          if (sampai < dari && sampai > bestSampai) {
+            bestSampai = sampai;
+            best = k;
+          }
+        });
+        return best;
       }
 
       // setHutangManual() — Simpan input hutang awal secara manual
       // Dipakai pertama kali sebelum ada rekap yang diproses
       function setHutangManual(kode, val) { db.hutang_bergulir[kode] = Math.max(0, val); sv(); renderRekap(); }
+
+      // setHutangOverride() â€” Simpan koreksi manual terhadap hutang auto per periode
+      // Ini TIDAK mengubah data auto asli, hanya menambah layer override
+      function setHutangOverride(kode, dari, sampai, val) {
+        const key = getHutangKey(dari, sampai);
+        if (!db.hutang_override[key]) db.hutang_override[key] = {};
+        db.hutang_override[key][kode] = Math.max(0, val);
+        sv(); renderRekap();
+      }
+
+      // resetHutangOverride() â€” Hapus koreksi manual, kembali ke nilai auto
+      function resetHutangOverride(kode, dari, sampai) {
+        const key = getHutangKey(dari, sampai);
+        if (db.hutang_override[key]) {
+          delete db.hutang_override[key][kode];
+          // Bersihkan key kosong
+          if (Object.keys(db.hutang_override[key]).length === 0) delete db.hutang_override[key];
+        }
+        sv(); renderRekap();
+      }
 
       // Hitung hasil bersih rekap satu peternak (dipakai di renderRekap & proses)
       // hitungRekap() — FUNGSI INTI REKAP — Hitung semua angka untuk satu peternak
@@ -4271,19 +4506,64 @@
             '<td class="num"></td>' +
             '<td class="num" style="color:' + (r.hutangGulung > 0 ? 'var(--danger)' : 'var(--success)') + ';font-weight:600">' + (r.hutangGulung > 0 ? 'Hutang Rp ' + fmtRp(r.hutangGulung) : '✅ Lunas') + '</td>' +
             '<td></td>';
-          // Input hutang manual (hanya tampil kalau belum ada dari riwayat)
-          const prevKey2 = cariPeriodeSebelumnya(dari);
-          const adaOtomatis = prevKey2 && db.rekap_diproses[prevKey2]?.[p.kode] !== undefined;
+          // Tentukan sumber data hutang: override â†’ auto â†’ manual
+          const overrideKey2 = getHutangKey(dari, sampai);
+          const autoInfo = getAutoHutangValue(p.kode, dari);
+          const adaOverride = db.hutang_override[overrideKey2]?.[p.kode] !== undefined;
+          const adaOtomatis = autoInfo.source === 'auto';
           const inpHB = document.createElement('input'); inpHB.type = 'number'; inpHB.min = '0';
-          inpHB.value = adaOtomatis ? (db.rekap_diproses[prevKey2][p.kode] || 0) : (db.hutang_bergulir[p.kode] || '');
+          // Tampilkan nilai aktual yang dipakai (termasuk override)
+          if (adaOverride) {
+            inpHB.value = db.hutang_override[overrideKey2][p.kode];
+          } else if (adaOtomatis) {
+            inpHB.value = autoInfo.value;
+          } else {
+            inpHB.value = db.hutang_bergulir[p.kode] || '';
+          }
           inpHB.placeholder = '0';
           inpHB.style.cssText = 'width:120px;text-align:right;height:28px;font-size:12px';
-          if (adaOtomatis) { inpHB.disabled = true; inpHB.title = 'Otomatis dari rekap periode sebelumnya'; inpHB.style.color = 'var(--text3)'; }
-          else { inpHB.addEventListener('change', () => setHutangManual(p.kode, parseFloat(inpHB.value) || 0)); }
+          // Semua input bisa diedit (termasuk auto)
+          if (adaOverride) {
+            inpHB.style.borderColor = 'var(--accent2)'; inpHB.style.background = 'rgba(255,149,0,0.06)';
+            inpHB.title = 'Dikoreksi manual (nilai auto: Rp ' + fmtRp(autoInfo.value) + ')';
+          } else if (adaOtomatis) {
+            inpHB.style.color = 'var(--text2)'; inpHB.title = 'Otomatis dari rekap sebelumnya. Edit untuk koreksi.';
+          }
+          inpHB.addEventListener('change', () => {
+            const newVal = parseFloat(inpHB.value) || 0;
+            if (adaOtomatis) {
+              // Jika auto dan user edit, simpan sebagai override
+              if (newVal === autoInfo.value) {
+                // Nilai sama dengan auto â†’ hapus override
+                resetHutangOverride(p.kode, dari, sampai);
+              } else {
+                setHutangOverride(p.kode, dari, sampai, newVal);
+              }
+            } else {
+              setHutangManual(p.kode, newVal);
+            }
+          });
           trH.cells[2].appendChild(inpHB);
+          // Label status
           const ketHB = document.createElement('span'); ketHB.style.cssText = 'font-size:10px;color:var(--text3);margin-left:4px';
-          ketHB.textContent = adaOtomatis ? '(auto)' : '(manual)';
+          if (adaOverride) {
+            ketHB.textContent = '(edit)';
+            ketHB.style.color = 'var(--accent2)';
+          } else if (adaOtomatis) {
+            ketHB.textContent = '(auto)';
+          } else {
+            ketHB.textContent = '(manual)';
+          }
           trH.cells[2].appendChild(ketHB);
+          // Tombol reset ke auto (hanya tampil kalau ada override)
+          if (adaOverride) {
+            const btnReset = document.createElement('button');
+            btnReset.textContent = 'â†©';
+            btnReset.title = 'Kembalikan ke nilai auto: Rp ' + fmtRp(autoInfo.value);
+            btnReset.style.cssText = 'margin-left:4px;border:none;background:var(--accent2);color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;font-family:inherit';
+            btnReset.addEventListener('click', () => { resetHutangOverride(p.kode, dari, sampai); toast('Hutang ' + p.nama + ' dikembalikan ke auto: Rp ' + fmtRp(autoInfo.value), 'ok'); });
+            trH.cells[2].appendChild(btnReset);
+          }
           tbHutang.appendChild(trH);
         });
 
@@ -4379,7 +4659,7 @@
 
         activePeternak.forEach(p => {
           const r = hitungRekap(p, data, dari, sampai, harga, hpakan);
-          if (!r.liter) return;
+          
           n++;
           tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += r.bersih; tHG += r.hutangGulung;
 
@@ -4389,8 +4669,8 @@
               <td><b>${p.kode}</b></td>
               <td>${p.nama}</td>
               <td>${p.wilayah}</td>
-              <td class="num">${r.liter.toFixed(1)}</td>
-              <td class="num">${fmtRp(r.bruto)}</td>
+              <td class="num">${r.liter > 0 ? r.liter.toFixed(1) : '-'}</td>
+              <td class="num">${r.bruto > 0 ? fmtRp(r.bruto) : '-'}</td>
               <td class="num">${r.spF > 0 ? fmtRp(r.spF) : '-'}</td>
               <td class="num">${r.berasF > 0 ? fmtRp(r.berasF) : '-'}</td>
               <td class="num">${r.mF > 0 ? fmtRp(r.mF) : '-'}</td>
@@ -4404,7 +4684,7 @@
             </tr>`;
         });
 
-        if (n === 0) { toast('Tidak ada data setoran periode ini', 'warn'); return; }
+        if (tL === 0 && activePeternak.length === 0) { toast('Belum ada data peternak', 'warn'); return; }
 
         const logoSrc = getSlipLogoSrc();
         const html = `
@@ -4504,10 +4784,11 @@
         const data = db.susu.filter(s => s.tgl >= dari && s.tgl <= sampai);
         let rows = ''; let tL = 0, tB = 0, tSP = 0, tBer = 0, tMin = 0, tLain = 0, tSelisih = 0, tPak = 0, tTab = 0, tHB = 0, tN = 0, n = 0;
         db.peternak.filter(p => p.status === 'aktif').forEach(p => {
-          const r = hitungRekap(p, data, dari, sampai, harga, hpakan); if (!r.liter) return; n++;
+          const r = hitungRekap(p, data, dari, sampai, harga, hpakan); 
+          n++;
           tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += r.bersih;
           const hgStyle = r.hutangGulung > 0 ? 'color:#ff3b30;font-weight:bold' : '';
-          rows += '<tr><td>' + n + '</td><td>' + p.kode + '</td><td>' + p.nama + '</td><td>' + p.wilayah + '</td><td align="right">' + r.liter.toFixed(1) + '</td><td align="right">' + fmtRp(r.bruto) + '</td><td align="right">' + (r.spF > 0 ? fmtRp(r.spF) : '—') + '</td><td align="right">' + (r.berasF > 0 ? fmtRp(r.berasF) : '—') + '</td><td align="right">' + (r.mF > 0 ? fmtRp(r.mF) : '—') + '</td><td align="right">' + (r.lF > 0 ? fmtRp(r.lF) : '—') + '</td><td align="right">' + (r.potSelisih !== 0 ? fmtRp(r.potSelisih) : '—') + '</td><td align="right">' + (r.pF > 0 ? fmtRp(r.pF) : '—') + '</td><td align="right">' + (r.tabF > 0 ? fmtRp(r.tabF) : '—') + '</td><td align="right" style="color:' + (r.hutangLalu > 0 ? '#ff3b30' : '#999') + '">' + (r.hutangLalu > 0 ? fmtRp(r.hutangLalu) : '—') + '</td><td align="right" style="font-weight:bold;color:' + (r.bersih === 0 ? '#666' : r.hutangGulung > 0 ? '#ff3b30' : '#000') + '">' + fmtRp(r.bersih) + '</td><td align="right" style="' + hgStyle + '">' + (r.hutangGulung > 0 ? fmtRp(r.hutangGulung) : '—') + '</td></tr>';
+          rows += '<tr><td>' + n + '</td><td>' + p.kode + '</td><td>' + p.nama + '</td><td>' + p.wilayah + '</td><td align="right">' + (r.liter > 0 ? r.liter.toFixed(1) : '—') + '</td><td align="right">' + (r.bruto > 0 ? fmtRp(r.bruto) : '—') + '</td><td align="right">' + (r.spF > 0 ? fmtRp(r.spF) : '—') + '</td><td align="right">' + (r.berasF > 0 ? fmtRp(r.berasF) : '—') + '</td><td align="right">' + (r.mF > 0 ? fmtRp(r.mF) : '—') + '</td><td align="right">' + (r.lF > 0 ? fmtRp(r.lF) : '—') + '</td><td align="right">' + (r.potSelisih !== 0 ? fmtRp(r.potSelisih) : '—') + '</td><td align="right">' + (r.pF > 0 ? fmtRp(r.pF) : '—') + '</td><td align="right">' + (r.tabF > 0 ? fmtRp(r.tabF) : '—') + '</td><td align="right" style="color:' + (r.hutangLalu > 0 ? '#ff3b30' : '#999') + '">' + (r.hutangLalu > 0 ? fmtRp(r.hutangLalu) : '—') + '</td><td align="right" style="font-weight:bold;color:' + (r.bersih === 0 ? '#666' : r.hutangGulung > 0 ? '#ff3b30' : '#000') + '">' + fmtRp(r.bersih) + '</td><td align="right" style="' + hgStyle + '">' + (r.hutangGulung > 0 ? fmtRp(r.hutangGulung) : '—') + '</td></tr>';
         });
         const w = window.open('', '_blank');
         w.document.write('<html><head><title>Rekap Pembayaran</title><style>body{font-family:Arial,sans-serif;font-size:9px;margin:10px}h2{margin:0 0 2px;font-size:12px}.sub{color:#666;font-size:9px;margin-bottom:8px}table{width:100%;border-collapse:collapse}th{background:#007aff;color:#fff;padding:4px 6px;text-align:left;font-size:9px}td{padding:3px 6px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#f9f9f9}.foot td{background:#e8f3ff!important;font-weight:bold;border-top:2px solid #007aff}@media print{body{margin:0}}</style></head><body>' +
@@ -4781,11 +5062,11 @@
         const d = buildSlipData(kode, dari, sampai); if (!d) { toast('Data tidak ditemukan', 'err'); return; }
         toast('Generating PDF...', 'info');
         const container = document.createElement('div');
-        container.style.cssText = 'width:148mm;height:210mm;padding:8mm 12mm;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.5;color:#1c1c1e;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center';
+        container.style.cssText = 'width:148mm;padding:8mm 12mm;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.5;color:#1c1c1e;box-sizing:border-box;position:absolute;left:-9999px;top:0';
         container.innerHTML = buildSlipHTML(d, dari, sampai);
         document.body.appendChild(container);
         try {
-          const opt = { margin: 0, filename: `${d.p.kode}_${d.p.nama.replace(/\s+/g, '_')}.pdf`, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: [148, 210], orientation: 'portrait' } };
+          const opt = { margin: [8, 12, 8, 12], filename: `${d.p.kode}_${d.p.nama.replace(/\s+/g, '_')}.pdf`, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: [148, 210], orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
           await html2pdf().set(opt).from(container).save();
           toast('PDF berhasil di-download!', 'ok');
         } catch (err) { toast('Gagal generate PDF: ' + err.message, 'err'); }
@@ -4804,11 +5085,11 @@
           const d = buildSlipData(kode, dari, sampai);
           if (!d) continue;
           const container = document.createElement('div');
-          container.style.cssText = 'width:148mm;height:210mm;padding:8mm 12mm;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.5;color:#1c1c1e;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;position:absolute;left:-9999px;top:0';
+          container.style.cssText = 'width:148mm;padding:8mm 12mm;font-family:Inter,Arial,sans-serif;font-size:11px;line-height:1.5;color:#1c1c1e;box-sizing:border-box;position:absolute;left:-9999px;top:0';
           container.innerHTML = buildSlipHTML(d, dari, sampai);
           document.body.appendChild(container);
           try {
-            const opt = { margin: 0, image: { type: 'jpeg', quality: 0.90 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: [148, 210], orientation: 'portrait' } };
+            const opt = { margin: [8, 12, 8, 12], image: { type: 'jpeg', quality: 0.90 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: [148, 210], orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
             const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
             const fileName = `${d.p.kode}_${d.p.nama.replace(/\s+/g, '_')}.pdf`;
             zip.file(fileName, pdfBlob);
@@ -5434,9 +5715,9 @@
       document.getElementById('keu-gaji-bln').addEventListener('change', updateGajiPreview);
       document.getElementById('btn-keu-gaji').addEventListener('click', () => { const bln = document.getElementById('keu-gaji-bln').value; if (!bln) { toast('Pilih bulan', 'err'); return; } if (!db.karyawan || !db.karyawan.length) { toast('Tidak ada data karyawan', 'err'); return; } const aktif = db.karyawan.filter(k => k.aktif); const sudah = db.keuangan.some(k => k.tipe === 'out' && k.kat === 'Gaji Karyawan' && k.tgl.startsWith(bln)); if (sudah && !confirm('Gaji bulan ini sudah dicatat. Catat lagi?')) return; const tgl = bln + '-01'; const tG = aktif.reduce((a, k) => a + k.gaji, 0); const tT = aktif.reduce((a, k) => a + k.tunjangan, 0); if (tG > 0) db.keuangan.push({ id: genId(), tgl, tipe: 'out', kat: 'Gaji Karyawan', ket: 'Gaji ' + aktif.length + ' karyawan', nominal: tG }); if (tT > 0) db.keuangan.push({ id: genId(), tgl, tipe: 'out', kat: 'Tunjangan Operasional', ket: 'Tunjangan ' + aktif.length + ' karyawan', nominal: tT }); svKeu(); refreshKeuSelects(); renderKeuangan(); updateGajiPreview(); toast('Gaji + tunjangan Rp ' + fmtRp(tG + tT) + ' dicatat', 'ok'); });
 
-      // ═══════════════════════════════════
+      // ════════════════════════════════════
       // MANAJEMEN KARYAWAN (CRUD)
-      // ═══════════════════════════════════
+      // ════════════════════════════════════
       document.getElementById('btn-kar-tambah').addEventListener('click', () => openModalKaryawan());
       document.getElementById('btn-kar-batal').addEventListener('click', () => document.getElementById('modal-karyawan').classList.remove('open'));
       document.getElementById('btn-kar-simpan').addEventListener('click', simpanKaryawan);
@@ -5946,7 +6227,7 @@
           '<div class="m-stat-label">' + (laba >= 0 ? 'Laba' : 'Rugi') + ' Bulan Ini</div>' +
           '</div>' +
           '<div class="m-stat">' +
-          '<div class="m-stat-icon">👨‍🌾</div>' +
+          '<div class="m-stat-icon">🥛</div>' +
           '<div class="m-stat-val" style="color:var(--accent)">' + db.peternak.filter(p => p.status === 'aktif').length + '</div>' +
           '<div class="m-stat-label">Peternak Aktif</div>' +
           '</div>';
