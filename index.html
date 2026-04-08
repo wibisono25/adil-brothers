@@ -4798,7 +4798,9 @@
           '<tbody>' + rows + '</tbody>' +
           '<tfoot><tr class="foot"><td colspan="4">TOTAL</td><td align="right">' + tL.toFixed(1) + '</td><td align="right">' + fmtRp(tB) + '</td><td align="right">' + fmtRp(tSP) + '</td><td align="right">' + fmtRp(tBer) + '</td><td align="right">' + fmtRp(tMin) + '</td><td align="right">' + fmtRp(tLain) + '</td><td align="right">' + fmtRp(tSelisih) + '</td><td align="right">' + fmtRp(tPak) + '</td><td align="right">' + fmtRp(tTab) + '</td><td align="right">' + fmtRp(tHB) + '</td><td align="right">' + fmtRp(tN) + '</td><td></td></tr></tfoot>' +
           '</table></body></html>');
-        w.document.close(); w.print();
+        w.document.close();
+        w.focus();
+        setTimeout(() => { w.print(); }, 500);
       });
 
       // ════════════════════════════════════
@@ -5029,7 +5031,7 @@
     .slip-page{width:148mm;height:210mm;box-sizing:border-box;padding:8mm 12mm;display:flex;flex-direction:column;justify-content:center;page-break-after:always;page-break-inside:avoid;margin:0 auto}
     .slip-page:last-child{page-break-after:auto}
     .slip-content{flex-shrink:1}
-    @media print{body{margin:0;padding:0;width:148mm} .slip-page{margin:0;padding:8mm 12mm} @page{size:148mm 210mm;margin:0}}
+    @media print{body{margin:0;padding:0;width:148mm} .slip-page{display:block !important; height:auto !important; min-height:210mm; margin:0;padding:8mm 12mm} @page{size:148mm 210mm;margin:0}}
     @media screen{.slip-page{border:1px solid #ddd;margin-bottom:20px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.1)}}
   `;
       }
@@ -5038,7 +5040,9 @@
         const d = buildSlipData(kode, dari, sampai); if (!d) return;
         const w = window.open('', '_blank');
         w.document.write(`<html><head><title>Slip - ${d.p.nama}</title><style>${getSlipCSS()}</style></head><body><div class="slip-page">${buildSlipHTML(d, dari, sampai)}</div></body></html>`);
-        w.document.close(); w.print();
+        w.document.close();
+        w.focus();
+        setTimeout(() => { w.print(); }, 500);
       }
 
       function cetakSemuaSlip(dari, sampai) {
@@ -5055,7 +5059,9 @@
         });
 
         w.document.write(`<html><head><title>Cetak Semua Slip</title><style>${getSlipCSS()}</style></head><body>${content}</body></html>`);
-        w.document.close(); w.print();
+        w.document.close();
+        w.focus();
+        setTimeout(() => { w.print(); }, 500);
       }
 
       async function exportSlipPDF(kode, dari, sampai) {
@@ -5155,7 +5161,9 @@
         const d = buildSlipData(kode, dari, sampai); if (!d) return;
         const w = window.open('', '_blank');
         w.document.write(`<html><head><title>Tabungan - ${d.p.nama}</title><style>${getSlipCSS()}</style></head><body><div class="slip-page">${buildSlipTabunganHTML(d, dari, sampai)}</div></body></html>`);
-        w.document.close(); w.print();
+        w.document.close();
+        w.focus();
+        setTimeout(() => { w.print(); }, 500);
       }
 
       async function exportSlipTabunganPDF(kode, dari, sampai) {
