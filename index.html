@@ -2447,7 +2447,12 @@
             <button class="btn btn-sm" id="btn-rek-pdf" style="background:#e74c3c;color:#fff">📄 Laporan PDF</button>
           </div>
         </div>
-        <div class="alert-info" id="rek-minus-alert" style="display:none">⚠️ Ada peternak dengan saldo minus — periksa
+        <div class="alert-info" id="rek-prev-alert" style="display:none;background:var(--warning-light);border-left-color:var(--warning);color:#b86200;margin-bottom:10px">
+          <span style="font-size:16px;margin-right:6px">&#9888;</span>
+          <span id="rek-prev-alert-text">Periode sebelumnya belum diproses</span>
+          <button class="btn btn-xs" id="btn-proses-prev" style="margin-left:10px;background:var(--warning);color:#fff;font-size:11px">Proses Minggu Lalu Dulu</button>
+        </div>
+        <div class="alert-info" id="rek-minus-alert" style="display:none">&#9888;&#65039; Ada peternak dengan saldo minus — periksa
           potongan atau setoran mereka</div>
         <div class="tbl-wrap">
           <table id="tbl-rekap">
@@ -4255,9 +4260,9 @@
 
       // Ambil hutang bergulir peternak untuk periode ini
       // Urutan prioritas:
-      //   1. Override manual per periode (koreksi user) â†’ hutang_override
-      //   2. Otomatis dari rekap periode sebelumnya â†’ rekap_diproses
-      //   3. Input manual awal (pertama kali) â†’ hutang_bergulir
+      //   1. Override manual per periode (koreksi user) → hutang_override
+      //   2. Otomatis dari rekap periode sebelumnya → rekap_diproses
+      //   3. Input manual awal (pertama kali) → hutang_bergulir
       function getHutangBergulir(kode, dari, sampai) {
         // 1. Cek override manual untuk periode ini
         const overrideKey = getHutangKey(dari, sampai);
@@ -4289,7 +4294,7 @@
       function cariPeriodeSebelumnya(dari) {
         const keys = Object.keys(db.rekap_diproses);
         if (!keys.length) return null;
-        const tglDari = new Date(dari + 'T00:00:00');
+        const tglDari = new Date(dari + 'T12:00:00');
         // 1. Cek mundur 1-7 hari â€” cocok untuk gap standar antar minggu
         for (let i = 1; i <= 7; i++) {
           const cek = new Date(tglDari);
@@ -4298,18 +4303,9 @@
           const found = keys.find(k => { const parts = k.split('__'); return parts[2] === tglCek; });
           if (found) return found;
         }
-        // 2. Fallback: cari periode terdekat yang berakhir sebelum 'dari'
-        let best = null;
-        let bestSampai = '';
-        keys.forEach(k => {
-          const parts = k.split('__');
-          const sampai = parts[2];
-          if (sampai < dari && sampai > bestSampai) {
-            bestSampai = sampai;
-            best = k;
-          }
-        });
-        return best;
+        // Tidak ditemukan = minggu sebelumnya belum diproses, return null
+        // (jangan fallback ke periode lama karena datanya sudah basi)
+        return null;
       }
 
       // setHutangManual() — Simpan input hutang awal secara manual
@@ -4395,6 +4391,8 @@
 
 
 
+      // Cache hasil hitungRekap dari renderRekap() agar Proses & Simpan menyimpan angka yang sama dengan tampilan
+      let _lastRekapResults = {};
       function renderRekap() {
         const { dari, sampai } = rekRange;
         const harga = parseFloat(document.getElementById('rek-harga').value) || 7300;
@@ -4412,8 +4410,8 @@
           sumEl.innerHTML = ''; tbPot.innerHTML = ''; tbHutang.innerHTML = '';
           return;
         }
-        lbl.textContent = fmtTgl(dari) + ' – ' + fmtTgl(sampai);
-        document.getElementById('rek-info').textContent = dari + ' s/d ' + sampai + ' · Harga: Rp ' + fmtRp(harga) + '/L';
+        lbl.textContent = fmtTgl(dari) + ' \u2013 ' + fmtTgl(sampai);
+        document.getElementById('rek-info').textContent = dari + ' s/d ' + sampai + ' \u00B7 Harga: Rp ' + fmtRp(harga) + '/L';
         // Update periode pakan default (1 minggu sebelum)
         updatePakanPeriodDefault();
 
@@ -4422,19 +4420,64 @@
         const sudahDiproses = !!db.rekap_diproses[prosesKey];
         const statusEl = document.getElementById('rek-proses-status');
         if (statusEl) statusEl.innerHTML = sudahDiproses
-          ? '<span style="color:var(--success);font-weight:600">✅ Periode ini sudah diproses — hutang bergulir tersimpan</span>'
+          ? '<span style="color:var(--success);font-weight:600">\u2705 Periode ini sudah diproses \u2014 hutang bergulir tersimpan</span>'
           : '<span style="color:var(--text3)">Belum diproses</span>';
+
+        // ── CEK APAKAH MINGGU SEBELUMNYA SUDAH DIPROSES ──
+        const prevAlertEl = document.getElementById('rek-prev-alert');
+        const prevAlertText = document.getElementById('rek-prev-alert-text');
+        const btnProsesPrev = document.getElementById('btn-proses-prev');
+        if (prevAlertEl) {
+          // Hitung periode Senin-Minggu sebelumnya (pakai getMonday/addDays agar timezone-safe)
+          const prevDariDate = getMonday(addDays(new Date(dari + 'T12:00:00'), -7));
+          const prevSampaiDate = addDays(prevDariDate, 6);
+          const prevDariStr = dts(prevDariDate);
+          const prevSampaiStr = dts(prevSampaiDate);
+          const prevProsesKey = getHutangKey(prevDariStr, prevSampaiStr);
+          const prevSudahDiproses = !!db.rekap_diproses[prevProsesKey];
+          // Cek apakah ada data susu di periode sebelumnya (pastikan memang ada aktivitas)
+          const prevData = db.susu.filter(s => s.tgl >= prevDariStr && s.tgl <= prevSampaiStr);
+          const adaDataPrev = prevData.length > 0;
+
+          if (!prevSudahDiproses && adaDataPrev) {
+            prevAlertEl.style.display = 'flex';
+            prevAlertText.innerHTML = '<b>\u26A0 Periode sebelumnya (' + fmtTgl(prevDariStr) + ' \u2013 ' + fmtTgl(prevSampaiStr) + ') belum diproses!</b><br>Hutang bergulir minggu lalu belum tersimpan. Klik tombol di samping untuk buka rekap minggu lalu, cek angkanya, lalu klik Proses \u0026 Simpan.';
+            // Tombol pindah ke minggu lalu agar user bisa verifikasi lalu proses manual
+            const newBtn = btnProsesPrev.cloneNode(true);
+            btnProsesPrev.parentNode.replaceChild(newBtn, btnProsesPrev);
+            newBtn.textContent = '\u27A1 Buka Minggu Lalu (' + fmtTgl(prevDariStr) + ')';
+            newBtn.addEventListener('click', () => {
+              // Pindah tampilan ke periode minggu lalu
+              rekRange = { dari: prevDariStr, sampai: prevSampaiStr };
+              // Aktifkan tombol kustom dan isi tanggal
+              document.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
+              const kustomBtn = document.querySelector('.sc-btn[data-sc="kustom"]');
+              if (kustomBtn) kustomBtn.classList.add('active');
+              const kr = document.getElementById('kustom-row');
+              if (kr) kr.style.display = 'block';
+              document.getElementById('rek-dari').value = prevDariStr;
+              document.getElementById('rek-sampai').value = prevSampaiStr;
+              delete document.getElementById('rek-pakan-dari').dataset.userSet;
+              renderRekap();
+              toast('\u27A1 Pindah ke periode ' + fmtTgl(prevDariStr) + ' \u2013 ' + fmtTgl(prevSampaiStr) + '. Cek angkanya lalu klik Proses \u0026 Simpan.', 'warn');
+            });
+          } else {
+            prevAlertEl.style.display = 'none';
+          }
+        }
 
         const data = db.susu.filter(s => s.tgl >= dari && s.tgl <= sampai);
         tb.innerHTML = ''; tbPot.innerHTML = ''; tbHutang.innerHTML = '';
+        _lastRekapResults = {}; // Reset cache setiap render
         let tL = 0, tB = 0, tSP = 0, tBer = 0, tMin = 0, tLain = 0, tSelisih = 0, tPak = 0, tTab = 0, tHB = 0, tN = 0, n = 0, adaMinus = false;
 
         db.peternak.filter(p => p.status === 'aktif').forEach((p) => {
           const r = hitungRekap(p, data, dari, sampai, harga, hpakan);
+          _lastRekapResults[p.kode] = r.hutangGulung; // Cache untuk Proses & Simpan
           const pot = getPot(dari, sampai, p.kode);
           const berasEntry = getActiveBeras(p.kode);
 
-          if (r.liter > 0) { n++; tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangBayar; tN += r.bersih; }
+          if (r.liter > 0) { n++; tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangBayar; tN += Math.max(0, r.bersih); }
           if (r.bersih < 0 || r.hutangGulung > 0) adaMinus = true;
 
           // REKAP ROW
@@ -4558,7 +4601,7 @@
           // Tombol reset ke auto (hanya tampil kalau ada override)
           if (adaOverride) {
             const btnReset = document.createElement('button');
-            btnReset.textContent = 'â†©';
+            btnReset.textContent = '\u21A9 Reset';
             btnReset.title = 'Kembalikan ke nilai auto: Rp ' + fmtRp(autoInfo.value);
             btnReset.style.cssText = 'margin-left:4px;border:none;background:var(--accent2);color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;font-family:inherit';
             btnReset.addEventListener('click', () => { resetHutangOverride(p.kode, dari, sampai); toast('Hutang ' + p.nama + ' dikembalikan ke auto: Rp ' + fmtRp(autoInfo.value), 'ok'); });
@@ -4607,11 +4650,20 @@
         if (sudah && !confirm('Periode ini sudah diproses sebelumnya. Proses ulang dan timpa data hutang bergulir yang tersimpan?')) return;
         // Simpan hutang bergulir setiap peternak ke rekap_diproses
         if (!db.rekap_diproses[prosesKey]) db.rekap_diproses[prosesKey] = {};
+        // Simpan nilai hutangGulung yang PERSIS sama dengan yang ditampilkan di layar
         let adaHutang = 0;
         db.peternak.filter(p => p.status === 'aktif').forEach(p => {
-          const r = hitungRekap(p, data, dari, sampai, harga, hpakan);
-          db.rekap_diproses[prosesKey][p.kode] = r.hutangGulung; // 0 = lunas, >0 = masih hutang
-          if (r.hutangGulung > 0) adaHutang++;
+          // Gunakan cache dari renderRekap jika ada, agar angka SAMA dengan tampilan
+          let hutangGulung;
+          if (_lastRekapResults.hasOwnProperty(p.kode)) {
+            hutangGulung = _lastRekapResults[p.kode];
+          } else {
+            // Fallback: hitung ulang (seharusnya jarang terjadi)
+            const r = hitungRekap(p, data, dari, sampai, harga, hpakan);
+            hutangGulung = r.hutangGulung;
+          }
+          db.rekap_diproses[prosesKey][p.kode] = hutangGulung;
+          if (hutangGulung > 0) adaHutang++;
         });
         sv(); renderRekap();
         toast('Pembayaran diproses! ' + (adaHutang > 0 ? adaHutang + ' peternak masih punya hutang bergulir.' : 'Semua peternak lunas.'), 'ok');
@@ -4635,7 +4687,7 @@
         let csv = 'No,Kode,Nama,Wilayah,Susu(L),Bruto,CicilanSP,Beras,Mineral,LainLain,Selisih,Pakan,Tabungan,HutangLalu,Dibayar,HutangGulung\n'; let n = 0;
         db.peternak.filter(p => p.status === 'aktif').forEach(p => {
           const r = hitungRekap(p, data, dari, sampai, harga, hpakan); if (!r.liter) return; n++;
-          csv += n + ',"' + p.kode + '","' + p.nama + '","' + p.wilayah + '",' + r.liter.toFixed(1) + ',' + r.bruto + ',' + r.spF + ',' + r.berasF + ',' + r.mF + ',' + r.lF + ',' + r.potSelisih + ',' + r.pF + ',' + r.tabF + ',' + r.hutangLalu + ',' + r.bersih + ',' + r.hutangGulung + '\n';
+          csv += n + ',"' + p.kode + '","' + p.nama + '","' + p.wilayah + '",' + r.liter.toFixed(1) + ',' + r.bruto + ',' + r.spF + ',' + r.berasF + ',' + r.mF + ',' + r.lF + ',' + r.potSelisih + ',' + r.pF + ',' + r.tabF + ',' + r.hutangLalu + ',' + Math.max(0, r.bersih) + ',' + r.hutangGulung + '\n';
         });
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'rekap_' + dari + '_' + sampai + '.csv'; a.click(); toast('CSV diekspor', 'ok');
       });
@@ -4661,7 +4713,7 @@
           const r = hitungRekap(p, data, dari, sampai, harga, hpakan);
           
           n++;
-          tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += r.bersih; tHG += r.hutangGulung;
+          tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += Math.max(0, r.bersih); tHG += r.hutangGulung;
 
           rows += `
             <tr>
@@ -4786,7 +4838,7 @@
         db.peternak.filter(p => p.status === 'aktif').forEach(p => {
           const r = hitungRekap(p, data, dari, sampai, harga, hpakan); 
           n++;
-          tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += r.bersih;
+          tL += r.liter; tB += r.bruto; tSP += r.spF; tBer += r.berasF; tMin += r.mF; tLain += r.lF; tSelisih += r.potSelisih; tPak += r.pF; tTab += r.tabF; tHB += r.hutangLalu; tN += Math.max(0, r.bersih);
           const hgStyle = r.hutangGulung > 0 ? 'color:#ff3b30;font-weight:bold' : '';
           rows += '<tr><td>' + n + '</td><td>' + p.kode + '</td><td>' + p.nama + '</td><td>' + p.wilayah + '</td><td align="right">' + (r.liter > 0 ? r.liter.toFixed(1) : '—') + '</td><td align="right">' + (r.bruto > 0 ? fmtRp(r.bruto) : '—') + '</td><td align="right">' + (r.spF > 0 ? fmtRp(r.spF) : '—') + '</td><td align="right">' + (r.berasF > 0 ? fmtRp(r.berasF) : '—') + '</td><td align="right">' + (r.mF > 0 ? fmtRp(r.mF) : '—') + '</td><td align="right">' + (r.lF > 0 ? fmtRp(r.lF) : '—') + '</td><td align="right">' + (r.potSelisih !== 0 ? fmtRp(r.potSelisih) : '—') + '</td><td align="right">' + (r.pF > 0 ? fmtRp(r.pF) : '—') + '</td><td align="right">' + (r.tabF > 0 ? fmtRp(r.tabF) : '—') + '</td><td align="right" style="color:' + (r.hutangLalu > 0 ? '#ff3b30' : '#999') + '">' + (r.hutangLalu > 0 ? fmtRp(r.hutangLalu) : '—') + '</td><td align="right" style="font-weight:bold;color:' + (r.bersih === 0 ? '#666' : r.hutangGulung > 0 ? '#ff3b30' : '#000') + '">' + fmtRp(r.bersih) + '</td><td align="right" style="' + hgStyle + '">' + (r.hutangGulung > 0 ? fmtRp(r.hutangGulung) : '—') + '</td></tr>';
         });
