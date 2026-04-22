@@ -6466,7 +6466,51 @@
       // ════════════════════════════════════
       // INIT
       // ════════════════════════════════════
-      ld(); renderAll();
+      ld();
+
+      // ════════════════════════════════════
+      // ONE-TIME FIX: Proses cicilan ke-1 yang belum tercatat (minggu lalu)
+      // Semua pinjaman SP & beras aktif yang masih 0 cicilan terbayar
+      // akan diupdate menjadi 1 cicilan terbayar.
+      // Flag 'fix_cicilan_1_done' mencegah fix dijalankan ulang.
+      // ════════════════════════════════════
+      if (!localStorage.getItem('fix_cicilan_1_done')) {
+        let fixCount = 0;
+        const tglFix = '2026-04-15'; // tanggal cicilan ke-1 (minggu lalu)
+        const periodeFix = '7-13 Apr 2026';
+
+        // Fix SP (Simpan Pinjam)
+        db.pinjaman.forEach(pin => {
+          if (!pin.lunas && (!pin.riwayatCicilan || pin.riwayatCicilan.length === 0)) {
+            const bayar = Math.min(pin.cicilan, pin.sisa);
+            pin.sisa -= bayar;
+            if (!pin.riwayatCicilan) pin.riwayatCicilan = [];
+            pin.riwayatCicilan.push({ tgl: tglFix, periode: periodeFix, nominal: bayar });
+            if (pin.sisa <= 0) { pin.sisa = 0; pin.lunas = true; pin.tglLunas = tglFix; }
+            fixCount++;
+          }
+        });
+
+        // Fix Beras
+        db.beras.forEach(b => {
+          if (!b.lunas && (!b.riwayatCicilan || b.riwayatCicilan.length === 0)) {
+            const bayar = Math.min(b.cicilan, b.sisa);
+            b.sisa -= bayar;
+            if (!b.riwayatCicilan) b.riwayatCicilan = [];
+            b.riwayatCicilan.push({ tgl: tglFix, periode: periodeFix, nominal: bayar });
+            if (b.sisa <= 0) { b.sisa = 0; b.lunas = true; b.tglLunas = tglFix; }
+            fixCount++;
+          }
+        });
+
+        if (fixCount > 0) {
+          sv(); // Simpan ke localStorage + Supabase
+          console.log(`[FIX] Cicilan ke-1 diproses untuk ${fixCount} hutang.`);
+        }
+        localStorage.setItem('fix_cicilan_1_done', '1');
+      }
+
+      renderAll();
       document.getElementById('inp-tgl').value = dts(new Date());
       document.getElementById('pk-tgl').value = dts(new Date());
       document.getElementById('pk-dist-tgl').value = dts(new Date());
