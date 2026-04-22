@@ -4131,6 +4131,17 @@
         return cicilan;
       }
 
+      // prosesCicilanBeras() — Sama seperti prosesCicilan tapi untuk hutang beras
+      function prosesCicilanBeras(kode, periodeLabel, tglRekap) {
+        const beras = getActiveBeras(kode); if (!beras) return 0;
+        const cicilan = Math.min(beras.cicilan, beras.sisa);
+        beras.sisa -= cicilan;
+        if (!beras.riwayatCicilan) beras.riwayatCicilan = [];
+        beras.riwayatCicilan.push({ tgl: tglRekap, periode: periodeLabel, nominal: cicilan });
+        if (beras.sisa <= 0) { beras.sisa = 0; beras.lunas = true; beras.tglLunas = tglRekap; }
+        return cicilan;
+      }
+
       // ════════════════════════════════════
       // REKAP PEMBAYARAN
       // ════════════════════════════════════
@@ -4652,6 +4663,7 @@
         if (!db.rekap_diproses[prosesKey]) db.rekap_diproses[prosesKey] = {};
         // Simpan nilai hutangGulung yang PERSIS sama dengan yang ditampilkan di layar
         let adaHutang = 0;
+        const periodeLabel = fmtTgl(dari) + ' – ' + fmtTgl(sampai);
         db.peternak.filter(p => p.status === 'aktif').forEach(p => {
           // Gunakan cache dari renderRekap jika ada, agar angka SAMA dengan tampilan
           let hutangGulung;
@@ -4664,8 +4676,14 @@
           }
           db.rekap_diproses[prosesKey][p.kode] = hutangGulung;
           if (hutangGulung > 0) adaHutang++;
+
+          // ── UPDATE CICILAN SP & BERAS ──
+          // Proses cicilan pinjaman SP (jika ada pinjaman aktif)
+          if (!sudah) prosesCicilan(p.kode, periodeLabel, sampai);
+          // Proses cicilan hutang beras (jika ada hutang beras aktif)
+          if (!sudah) prosesCicilanBeras(p.kode, periodeLabel, sampai);
         });
-        sv(); renderRekap();
+        sv(); renderRekap(); renderPinjaman();
         toast('Pembayaran diproses! ' + (adaHutang > 0 ? adaHutang + ' peternak masih punya hutang bergulir.' : 'Semua peternak lunas.'), 'ok');
       });
 
